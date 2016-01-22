@@ -10,27 +10,44 @@ defmodule Murdoch.TopicTest do
 
   test "successfully creating a topic", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
-      [token] = Plug.Conn.get_req_header conn, "authorization"
-
-      assert Regex.match?(~r/Bearer/, token)
-      {:ok, body, _conn} = Plug.Conn.read_body conn
-      assert body == ""
+      assert_access_token(conn)
+      assert_body(conn, "")
       Plug.Conn.resp conn, 201, ~s({"name": "projects/myproject/topics/mytopic"})
     end
 
     assert {:ok, %Topic{name: "test"}} = Topic.create("test")
   end
 
-  test "failing because of Google error", %{bypass: bypass} do
+  test "failing to create because of Google error", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
+      assert_access_token(conn)
       Plug.Conn.resp conn, 403, ~s({"error": {"code": 403, "message": "User not authorized to perform this action.", "status": "PERMISSION_DENIED"}})
     end
 
     assert {:error, _body, 403} = Topic.create("failed")
   end
 
-  test "failing because of network error", %{bypass: bypass} do
+  test "failing to create because of network error", %{bypass: bypass} do
     Bypass.down(bypass)
     assert {:error, _something} = Topic.create("network-error")
+  end
+
+  test "deleting a topic", %{bypass: bypass} do
+    Bypass.expect bypass, fn conn ->
+      assert_access_token(conn)
+      Plug.Conn.resp conn, 200, ""
+    end
+
+    assert {:ok, _body, _code} = %Topic{name: "delete-me"} |> Topic.delete
+  end
+
+  defp assert_access_token(conn) do
+    [token] = Plug.Conn.get_req_header conn, "authorization"
+    assert Regex.match?(~r/Bearer/, token)
+  end
+
+  defp assert_body(conn, match) do
+    {:ok, body, _conn} = Plug.Conn.read_body conn
+    assert Regex.match?(~r/#{match}/, body)
   end
 end

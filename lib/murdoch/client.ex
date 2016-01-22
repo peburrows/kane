@@ -13,6 +13,12 @@ defmodule Murdoch.Client do
     |> handle_response
   end
 
+  def delete(path) do
+    url(path)
+    |> HTTPoison.delete([auth_header])
+    |> handle_response
+  end
+
   defp url(path), do: Path.join([endpoint, path])
 
   defp endpoint, do: Application.get_env(:murdoch, :endpoint, "https://pubsub.googleapis.com/v1")
