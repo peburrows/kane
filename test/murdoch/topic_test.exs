@@ -42,6 +42,19 @@ defmodule Murdoch.TopicTest do
     assert {:ok, %Topic{name: ^name}} = Topic.find(name)
   end
 
+  test "finding a topic with a fully-qualified name", %{bypass: bypass} do
+    {:ok, project} = Goth.Config.get(:project_id)
+    short_name = "fqn"
+    full_name  = "projects/#{project}/topics/#{short_name}"
+
+    Bypass.expect bypass, fn conn ->
+      assert conn.request_path == "/#{full_name}"
+      Plug.Conn.resp conn, 200, ~s({"name":"#{full_name}"})
+    end
+
+    assert {:ok, %Topic{name: ^short_name}} = Topic.find(full_name)
+  end
+
   test "deleting a topic", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert_access_token(conn)

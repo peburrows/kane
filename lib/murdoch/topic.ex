@@ -32,7 +32,9 @@ defmodule Murdoch.Topic do
   def delete(%__MODULE__{name: topic}), do: delete(topic)
   def delete(topic), do: Client.delete(path(topic))
 
-  defp with_name(name), do: %__MODULE__{name: String.replace(name, "#{path}/", "")}
+  defp with_name(name), do: %__MODULE__{name: strip!(name)}
+
+  defp strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
 
   defp project do
     {:ok, project} = Goth.Config.get(:project_id)
@@ -40,5 +42,5 @@ defmodule Murdoch.Topic do
   end
 
   defp path, do: "projects/#{project}/topics"
-  defp path(topic), do: "#{path}/#{topic}"
+  defp path(topic), do: "#{path}/#{strip!(topic)}"
 end
