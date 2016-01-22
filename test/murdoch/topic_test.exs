@@ -32,6 +32,16 @@ defmodule Murdoch.TopicTest do
     assert {:error, _something} = Topic.create("network-error")
   end
 
+  test "finding a topic", %{bypass: bypass} do
+    Bypass.expect bypass, fn conn ->
+      [_, _, project, _, name] = String.split(conn.request_path, "/")
+      Plug.Conn.resp conn, 200, ~s({"name": "projects/#{project}/topics/#{name}"})
+    end
+
+    name = "finder"
+    assert {:ok, %Topic{name: ^name}} = Topic.find(name)
+  end
+
   test "deleting a topic", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert_access_token(conn)
@@ -41,6 +51,25 @@ defmodule Murdoch.TopicTest do
     assert {:ok, _body, _code} = %Topic{name: "delete-me"} |> Topic.delete
   end
 
+  test "listing all topics", %{bypass: bypass} do
+    Bypass.expect bypass, fn conn ->
+      {:ok, project} = Goth.Config.get(:project_id)
+      assert Regex.match?(~r/\/projects\/#{project}\/topics/, conn.request_path)
+
+      Plug.Conn.resp conn, 200, ~s({"topics": [
+                                    {"name": "projects/#{project}/topics/mytopic1"},
+                                    {"name": "projects/#{project}/topics/mytopic2"}
+                                  ]})
+    end
+
+    {:ok, topics} = Topic.all
+    assert is_list(topics)
+    Enum.each topics, fn t ->
+      assert %Topic{} = t
+    end
+  end
+
+  # helpers
   defp assert_access_token(conn) do
     [token] = Plug.Conn.get_req_header conn, "authorization"
     assert Regex.match?(~r/Bearer/, token)

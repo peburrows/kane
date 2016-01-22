@@ -1,6 +1,12 @@
 defmodule Murdoch.Client do
   @token_mod Application.get_env(:murdoch, :token, Goth.Token)
 
+  def get(path) do
+    url(path)
+    |> HTTPoison.get([auth_header])
+    |> handle_response
+  end
+
   def put(path, data \\ "") do
     url(path)
     |> HTTPoison.put(data, [auth_header])
