@@ -5,7 +5,7 @@ defmodule Murdoch.Topic do
   def find(name) do
     case Client.get(path(name)) do
       {:ok, body, _code} ->
-        {:ok, Poison.decode!(body)["name"] |> with_name}
+        {:ok, body |> Poison.decode! |> Map.get("name") |> with_name}
       err -> err
     end
   end
