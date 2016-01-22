@@ -5,7 +5,7 @@ defmodule Murdoch.Topic do
   def create(topic) do
     {:ok, project} = Goth.Config.get(:project_id)
     case Murdoch.Client.put("projects/#{project}/topics/#{topic}") do
-      {:ok, _body, _code} -> %__MODULE__{name: topic}
+      {:ok, _body, _code} -> {:ok, %__MODULE__{name: topic}}
       err -> err
     end
   end

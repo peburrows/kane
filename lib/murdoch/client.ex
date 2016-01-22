@@ -1,16 +1,16 @@
 defmodule Murdoch.Client do
+  @token_mod Application.get_env(:murdoch, :token, Goth.Token)
+
   def put(path, data \\ "") do
-    case HTTPoison.put(url(path), data, [auth_header]) do
-      {:ok, response} -> handle_response(response)
-      err -> err
-    end
+    url(path)
+    |> HTTPoison.put(data, [auth_header])
+    |> handle_response
   end
 
   def post(path, data) do
-    case HTTPoison.post(url(path), Poison.encode!(data), [auth_header]) do
-      {:ok, response} -> handle_response(response)
-      err -> err
-    end
+    url(path)
+    |> HTTPoison.post(Poison.encode!(data), [auth_header])
+    |> handle_response
   end
 
   defp url(path), do: Path.join([endpoint, path])
@@ -18,11 +18,14 @@ defmodule Murdoch.Client do
   defp endpoint, do: Application.get_env(:murdoch, :endpoint, "https://pubsub.googleapis.com/v1")
 
   defp auth_header do
-    {:ok, token} = Goth.Token.for_scope(Murdoch.oauth_scope)
+    {:ok, token} = @token_mod.for_scope(Murdoch.oauth_scope)
     {"Authorization", "#{token.type} #{token.token}"}
   end
 
-  defp handle_response(response) do
+  defp handle_response({:ok, response}), do: handle_status(response)
+  defp handle_response(err), do: err
+
+  defp handle_status(response) do
     case response.status_code do
       code when code in 200..299 ->
         {:ok, response.body, code}
