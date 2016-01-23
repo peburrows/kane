@@ -8,15 +8,18 @@ defmodule Kane.Message do
       err -> err
     end
   end
+
   def publish(messages, %Topic{name: topic}) when is_list(messages)  do
     case Kane.Client.post(path(topic), data(messages)) do
       {:ok, body, _code} ->
-        ids = body
-              |> Poison.decode!
-              |> Map.get("messageIds")
-        collected = for id <- ids, message <- messages do
-          %{message | id: id}
-        end
+        collected = body
+        |> Poison.decode!
+        |> Map.get("messageIds")
+        |> Enum.with_index
+        |> Enum.map(fn({id, i}) ->
+             %{Enum.at(messages, i) | id: id}
+           end)
+
         {:ok, collected}
       err -> err
     end

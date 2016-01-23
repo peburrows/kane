@@ -36,4 +36,24 @@ defmodule Kane.MessageTest do
     assert {:ok, %Message{id: id}} = Message.publish(%Message{data: data}, %Topic{name: topic})
     assert id != nil
   end
+
+  test "publishing multiple messages", %{bypass: bypass} do
+    {:ok, project} = Goth.Config.get(:project_id)
+    topic = "publish-multi"
+    ids = ["hello", "hi", "howdy"]
+
+    Bypass.expect bypass, fn conn ->
+      assert Regex.match?(~r{/projects/#{project}/topics/#{topic}:publish}, conn.request_path)
+      Plug.Conn.resp conn, 201, ~s({"messageIds": [ "#{Enum.at(ids, 0)}", "#{Enum.at(ids, 1)}", "#{Enum.at(ids, 2)}" ]})
+    end
+
+    data = [%{"hello" => "world"}, %{"hi" => "world"}, %{"howdy" => "world"}]
+    assert {:ok, messages} = Message.publish([%Message{data: Enum.at(data, 0)}, %Message{data: Enum.at(data, 1)}, %Message{data: Enum.at(data, 2)}], %Topic{name: topic})
+
+    ids |> Enum.with_index |> Enum.each(fn({id, i})->
+      m = Enum.at(messages, i)
+      assert id == m.id
+      assert Enum.at(data, i) == m.data
+    end)
+  end
 end
