@@ -15,7 +15,7 @@ defmodule Kane.Message do
         collected = body
         |> Poison.decode!
         |> Map.get("messageIds")
-        |> Enum.with_index
+        |> Stream.with_index
         |> Enum.map(fn({id, i}) ->
              %{Enum.at(messages, i) | id: id}
            end)
@@ -35,7 +35,7 @@ defmodule Kane.Message do
       "messages" =>
         Enum.map(messages, fn(%__MODULE__{data: d, attributes: a}) ->
           %{
-            "data" => (d |> Poison.encode! |> Base.encode64),
+            "data" => encode_body(d),
             "attributes" => Enum.reduce(a, %{}, fn({key, val}, map)->
               Map.put(map, key, val)
             end)
@@ -43,6 +43,9 @@ defmodule Kane.Message do
         end)
     }
   end
+
+  def encode_body(body) when is_binary(body), do: Base.encode64(body)
+  def encode_body(body), do: body |> Poison.encode! |> encode_body
 
   def json(%__MODULE__{}=message), do: json([message])
   def json(messages) when is_list(messages) do

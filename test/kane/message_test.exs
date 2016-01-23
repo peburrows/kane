@@ -9,6 +9,18 @@ defmodule Kane.MessageTest do
     {:ok, bypass: bypass}
   end
 
+  test "encoding the message body from a data structure" do
+    data = %{"phil?": "He's aweseom"}
+    encoded = data |> Poison.encode! |> Base.encode64
+    assert Message.encode_body(data) == encoded
+  end
+
+  test "encoding the message body from a string" do
+    data = "we are just a string!"
+    encoded = Base.encode64(data)
+    assert Message.encode_body(data) == encoded
+  end
+
   test "building the message data" do
     message = %Message{data: %{"hello": "world"}, attributes: %{"random" => "attr"}}
 
