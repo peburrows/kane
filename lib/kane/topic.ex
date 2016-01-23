@@ -34,7 +34,7 @@ defmodule Kane.Topic do
 
   defp with_name(name), do: %__MODULE__{name: strip!(name)}
 
-  defp strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
+  def strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
 
   defp project do
     {:ok, project} = Goth.Config.get(:project_id)
