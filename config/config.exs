@@ -10,11 +10,11 @@ use Mix.Config
 
 # You can configure for your application as:
 #
-#     config :murdoch, key: :value
+#     config :kane, key: :value
 #
 # And access this configuration in your application as:
 #
-#     Application.get_env(:murdoch, :key)
+#     Application.get_env(:kane, :key)
 #
 # Or configure a 3rd-party app:
 #

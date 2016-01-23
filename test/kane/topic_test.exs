@@ -1,10 +1,10 @@
-defmodule Murdoch.TopicTest do
+defmodule Kane.TopicTest do
   use ExUnit.Case
-  alias Murdoch.Topic
+  alias Kane.Topic
 
   setup do
     bypass = Bypass.open
-    Application.put_env(:murdoch, :endpoint, "http://localhost:#{bypass.port}")
+    Application.put_env(:kane, :endpoint, "http://localhost:#{bypass.port}")
     {:ok, bypass: bypass}
   end
 

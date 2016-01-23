@@ -1,8 +1,8 @@
-defmodule Murdoch.Mixfile do
+defmodule Kane.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :murdoch,
+    [app: :kane,
      version: "0.0.1",
      elixir: "~> 1.2",
      package: package,

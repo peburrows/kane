@@ -1,6 +1,6 @@
-defmodule Murdoch.Topic do
+defmodule Kane.Topic do
   defstruct [:name]
-  alias Murdoch.Client
+  alias Kane.Client
 
   def find(name) do
     case Client.get(path(name)) do

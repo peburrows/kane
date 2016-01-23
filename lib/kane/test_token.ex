@@ -1,4 +1,4 @@
-defmodule Murdoch.TestToken do
+defmodule Kane.TestToken do
   def for_scope(scope) do
     {:ok, %Goth.Token{
       scope: scope,

@@ -1,4 +1,4 @@
-defmodule Murdoch.Message do
+defmodule Kane.Message do
   defstruct attributes: [], data: nil
 end
 #

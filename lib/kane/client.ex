@@ -1,5 +1,5 @@
-defmodule Murdoch.Client do
-  @token_mod Application.get_env(:murdoch, :token, Goth.Token)
+defmodule Kane.Client do
+  @token_mod Application.get_env(:kane, :token, Goth.Token)
 
   def get(path) do
     url(path)
@@ -27,10 +27,10 @@ defmodule Murdoch.Client do
 
   defp url(path), do: Path.join([endpoint, path])
 
-  defp endpoint, do: Application.get_env(:murdoch, :endpoint, "https://pubsub.googleapis.com/v1")
+  defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
 
   defp auth_header do
-    {:ok, token} = @token_mod.for_scope(Murdoch.oauth_scope)
+    {:ok, token} = @token_mod.for_scope(Kane.oauth_scope)
     {"Authorization", "#{token.type} #{token.token}"}
   end
 
