@@ -2,7 +2,12 @@ defmodule Kane.Message do
   alias Kane.Topic
   defstruct id: nil, attributes: %{}, data: nil
 
-  def publish(%__MODULE__{}=message, %Topic{}=topic), do: publish([message], topic)
+  def publish(%__MODULE__{}=message, %Topic{}=topic) do
+    case publish([message], topic) do
+      {:ok, [message|_]} -> {:ok, message}
+      err -> err
+    end
+  end
   def publish(messages, %Topic{name: topic}) when is_list(messages)  do
     case Kane.Client.post(path(topic), data(messages)) do
       {:ok, body, _code} ->

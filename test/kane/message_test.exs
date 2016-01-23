@@ -33,7 +33,7 @@ defmodule Kane.MessageTest do
     end
 
     data = %{"my" => "message", "random" => "fields"}
-    assert {:ok, [%Message{id: id}]} = Message.publish(%Message{data: data}, %Topic{name: topic})
+    assert {:ok, %Message{id: id}} = Message.publish(%Message{data: data}, %Topic{name: topic})
     assert id != nil
   end
 end
