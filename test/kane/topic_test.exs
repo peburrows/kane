@@ -5,7 +5,13 @@ defmodule Kane.TopicTest do
   setup do
     bypass = Bypass.open
     Application.put_env(:kane, :endpoint, "http://localhost:#{bypass.port}")
-    {:ok, bypass: bypass}
+    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, bypass: bypass, project: project}
+  end
+
+  test "getting full name", %{project: project} do
+    name = "my-topic"
+    assert "projects/#{project}/topics/#{name}" == %Topic{name: name} |> Topic.full_name
   end
 
   test "successfully creating a topic", %{bypass: bypass} do

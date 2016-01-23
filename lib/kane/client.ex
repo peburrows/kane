@@ -9,7 +9,7 @@ defmodule Kane.Client do
 
   def put(path, data \\ "") do
     url(path)
-    |> HTTPoison.put(data, [auth_header])
+    |> HTTPoison.put(Poison.encode!(data), [auth_header])
     |> handle_response
   end
 

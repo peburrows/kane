@@ -41,6 +41,8 @@ defmodule Kane.Topic do
     project
   end
 
+  def full_name(%__MODULE__{name: name}), do: path(name)
+
   defp path, do: "projects/#{project}/topics"
   defp path(topic), do: "#{path}/#{strip!(topic)}"
 end
