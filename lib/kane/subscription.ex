@@ -11,8 +11,9 @@ defmodule Kane.Subscription do
     end
   end
 
-  def pull!(%__MODULE__{topic: %Topic{}}=sub) do
-    case Kane.Client.get(path(sub, :pull)) do
+  def pull!(%__MODULE__{}=sub) do
+    case Kane.Client.post(path(sub, :pull), data(sub, :pull)) do
+      {:ok, "{}", _code} -> {:ok, []}
       {:ok, body, _code} ->
         {:ok, body
               |> Poison.decode!
@@ -27,6 +28,13 @@ defmodule Kane.Subscription do
 
   def data(%__MODULE__{ack_deadline: ack, topic: %Topic{}=topic}, :create) do
     %{ "topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack }
+  end
+
+  def data(%__MODULE__{}, :pull) do
+    %{
+      "returnImmediately": true,
+      "maxMessages": 100,
+    }
   end
 
   def path(%__MODULE__{}=sub, kind) do

@@ -73,7 +73,7 @@ defmodule Kane.MessageTest do
     ack = "123"
     id  = "321"
     data= "eyJoZWxsbyI6IndvcmxkIn0="
-    time= "2015-10-02T15:01:23.045123456Z"
+    time= "2016-01-24T03:07:33.195Z"
 
     assert {:ok,
       %Message{ id:     ^id,
@@ -81,11 +81,10 @@ defmodule Kane.MessageTest do
                 publish_time: ^time,
                 data:  ^data,
                 attributes: %{}
-      }} = Message.from_subscription(%{ "ackId" => ack,
-                                        "message" => %{
-                                          "data" => data,
-                                          "publishTime" => time,
-                                          "attributes" => %{},
-                                          "messageId" => id}})
+      }} = Message.from_subscription(%{"ackId" => ack,
+                                        "message" =>
+                                        %{"data" => data,
+                                        "messageId" => id,
+                                        "publishTime" => time}})
   end
 end

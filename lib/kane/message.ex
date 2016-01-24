@@ -57,7 +57,8 @@ defmodule Kane.Message do
     message
   end
 
-  def from_subscription(%{"ackId" => ack, "message" => %{"data" => data, "publishTime" => time, "attributes" => %{}=attr, "messageId" => id}}) do
+  def from_subscription(%{"ackId" => ack, "message" => %{"data" => data, "publishTime" => time, "messageId" => id}}=mess) do
+    attr = Map.get(mess, "attributes", %{})
     {:ok, %__MODULE__{
       id: id,
       publish_time: time,

@@ -59,6 +59,7 @@ defmodule Kane.SubscriptionTest do
 
   test "pulling from a subscription", %{bypass: bypass, project: project} do
     Bypass.expect bypass, fn conn ->
+      assert conn.method == "POST"
       assert Regex.match?(~r(:pull$), conn.request_path)
       Plug.Conn.send_resp conn, 200, ~s({"receivedMessages": [
                                           {"ackId":"123",
