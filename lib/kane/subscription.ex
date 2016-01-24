@@ -3,13 +3,16 @@ defmodule Kane.Subscription do
   alias Kane.Topic
   alias Kane.Message
 
-  def create!(%__MODULE__{}=sub) do
+  def create(%__MODULE__{}=sub) do
     case Kane.Client.put(path(sub, :create), data(sub, :create)) do
       {:ok, _body, _code} -> {:ok, sub}
       {:error, _body, 409} -> {:error, :already_exists}
       err -> err
     end
   end
+
+  def delete(%__MODULE__{name: name}), do: delete(name)
+  def delete(name), do: Kane.Client.delete(path(name, :delete))
 
   def pull(%__MODULE__{}=sub) do
     case Kane.Client.post(path(sub, :pull), data(sub, :pull)) do
@@ -49,15 +52,17 @@ defmodule Kane.Subscription do
     }
   end
 
-  def path(%__MODULE__{}=sub, kind) do
+  def path(%__MODULE__{name: name}, kind), do: path(name, kind)
+  def path(name, kind) do
     case kind do
-      :pull -> full_name(sub) <> ":pull"
-      :ack  -> full_name(sub) <> ":acknowledge"
-      _     -> full_name(sub)
+      :pull -> full_name(name) <> ":pull"
+      :ack  -> full_name(name) <> ":acknowledge"
+      _     -> full_name(name)
     end
   end
 
-  def full_name(%__MODULE__{name: name}) do
+  def full_name(%__MODULE__{name: name}), do: full_name(name)
+  def full_name(name) do
     {:ok, project} = Goth.Config.get(:project_id)
     "projects/#{project}/subscriptions/#{name}"
   end

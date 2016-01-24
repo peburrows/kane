@@ -54,7 +54,18 @@ defmodule Kane.SubscriptionTest do
                 topic: %Topic{name: ^topic},
                 name: ^name,
                 ack_deadline: 10}
-            } = Subscription.create!(sub)
+            } = Subscription.create(sub)
+  end
+
+  test "deleting a subscription", %{bypass: bypass, project: project} do
+    name = "delete-me"
+    Bypass.expect bypass, fn conn ->
+      assert conn.method == "DELETE"
+      assert Regex.match?(~r{projects/#{project}/subscriptions/#{name}}, conn.request_path)
+      Plug.Conn.send_resp conn, 200, "{}\n"
+    end
+
+    Subscription.delete(name)
   end
 
   test "pulling from a subscription", %{bypass: bypass, project: project} do
