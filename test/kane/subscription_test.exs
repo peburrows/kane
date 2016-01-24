@@ -2,6 +2,7 @@ defmodule Kane.SubscriptionTest do
   use ExUnit.Case
   alias Kane.Subscription
   alias Kane.Topic
+  alias Kane.Message
 
   setup do
     bypass = Bypass.open
@@ -54,5 +55,29 @@ defmodule Kane.SubscriptionTest do
                 name: ^name,
                 ack_deadline: 10}
             } = Subscription.create!(sub)
+  end
+
+  test "pulling from a subscription", %{bypass: bypass, project: project} do
+    Bypass.expect bypass, fn conn ->
+      assert Regex.match?(~r(:pull$), conn.request_path)
+      Plug.Conn.send_resp conn, 200, ~s({"receivedMessages": [
+                                          {"ackId":"123",
+                                            "message": {
+                                              "messageId": "messId",
+                                              "publishTime": "2015-10-02T15:01:23.045123456Z",
+                                              "attributes": {
+                                                "key" : "val"
+                                              },
+                                              "data": "eyJoZWxsbyI6IndvcmxkIn0="
+                                            }
+                                          }
+                                        ]})
+    end
+
+    assert {:ok, messages} = Subscription.pull!(%Subscription{name: "tasty", topic: %Topic{name: "messages"}})
+    assert is_list(messages)
+    Enum.each messages, fn(m)->
+      assert %Message{} = m
+    end
   end
 end

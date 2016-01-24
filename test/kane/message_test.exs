@@ -68,4 +68,24 @@ defmodule Kane.MessageTest do
       assert Enum.at(data, i) == m.data
     end)
   end
+
+  test "creating from subscription message" do
+    ack = "123"
+    id  = "321"
+    data= "eyJoZWxsbyI6IndvcmxkIn0="
+    time= "2015-10-02T15:01:23.045123456Z"
+
+    assert {:ok,
+      %Message{ id:     ^id,
+                ack_id: ^ack,
+                publish_time: ^time,
+                data:  ^data,
+                attributes: %{}
+      }} = Message.from_subscription(%{ "ackId" => ack,
+                                        "message" => %{
+                                          "data" => data,
+                                          "publishTime" => time,
+                                          "attributes" => %{},
+                                          "messageId" => id}})
+  end
 end

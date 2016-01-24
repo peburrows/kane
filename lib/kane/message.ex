@@ -1,6 +1,6 @@
 defmodule Kane.Message do
   alias Kane.Topic
-  defstruct id: nil, attributes: %{}, data: nil
+  defstruct id: nil, attributes: %{}, data: nil, ack_id: nil, publish_time: nil
 
   def publish(%__MODULE__{}=message, %Topic{}=topic) do
     case publish([message], topic) do
@@ -50,6 +50,21 @@ defmodule Kane.Message do
   def json(%__MODULE__{}=message), do: json([message])
   def json(messages) when is_list(messages) do
     data(messages) |> Poison.encode!
+  end
+
+  def from_subscription!(%{}=data) do
+    {:ok, message} = from_subscription(data)
+    message
+  end
+
+  def from_subscription(%{"ackId" => ack, "message" => %{"data" => data, "publishTime" => time, "attributes" => %{}=attr, "messageId" => id}}) do
+    {:ok, %__MODULE__{
+      id: id,
+      publish_time: time,
+      ack_id: ack,
+      data: data,
+      attributes: attr
+    }}
   end
 
   defp path(%Topic{name: topic}), do: path(topic)
