@@ -1,24 +1,31 @@
 defmodule Kane.Client do
+  alias Response.Success
+  alias Response.Error
+
   @token_mod Application.get_env(:kane, :token, Goth.Token)
 
+  @spec get(binary) :: Success.t | Error.t
   def get(path) do
     url(path)
     |> HTTPoison.get([auth_header])
     |> handle_response
   end
 
+  @spec put(binary, any) :: Success.t | Error.t
   def put(path, data \\ "") do
     url(path)
     |> HTTPoison.put(Poison.encode!(data), [auth_header])
     |> handle_response
   end
 
+  @spec post(binary, any) :: Success.t | Error.t
   def post(path, data) do
     url(path)
     |> HTTPoison.post(Poison.encode!(data), [auth_header])
     |> handle_response
   end
 
+  @spec delete(binary) :: Success.t | Error.t
   def delete(path) do
     url(path)
     |> HTTPoison.delete([auth_header])
