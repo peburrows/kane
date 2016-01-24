@@ -56,16 +56,18 @@ defmodule Kane.Topic do
 
   @doc """
   Strips the project and topic prefix from a fully qualified topic name
-  iex> Kane.Topic.strip!("projects/my-project/topics/my-topic")
-  "my-topic"
+
+      iex> Kane.Topic.strip!("projects/my-project/topics/my-topic")
+      "my-topic"
   """
   @spec strip!(binary) :: binary
   def strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
 
   @doc """
   Adds the project and topic prefix (if necessary) to create a fully-qualified topic name
-  iex> Kane.Topic.full_name(%Kane.Topic{name: "my-topic"})
-  "projects/my-project/topics/my-topic"
+
+      iex> Kane.Topic.full_name(%Kane.Topic{name: "my-topic"})
+      "projects/my-project/topics/my-topic"
   """
   @spec full_name(t) :: binary
   def full_name(%__MODULE__{name: name}), do: path(name)
