@@ -1,7 +1,23 @@
 defmodule Kane.Message do
   alias Kane.Topic
+  alias Kane.Client.Response.Error
+
+  @type t :: %__MODULE__{
+    id: String.t,
+    attributes: Map.t,
+    data: any,
+    ack_id: String.t,
+    publish_time: String.t
+  }
+
   defstruct id: nil, attributes: %{}, data: nil, ack_id: nil, publish_time: nil
 
+  @spec publish(binary, binary) :: {:ok, t} | Error.t
+  def publish(message, topic) when is_binary(message) and is_binary(topic) do
+    publish(%__MODULE__{data: message}, %Topic{name: topic})
+  end
+
+  @spec publish(t, Topic.t) :: {:ok, t} | Error.t
   def publish(%__MODULE__{}=message, %Topic{}=topic) do
     case publish([message], topic) do
       {:ok, [message|_]} -> {:ok, message}
@@ -9,6 +25,7 @@ defmodule Kane.Message do
     end
   end
 
+  @spec publish([t], Topic.t) :: {:ok, [t]} | Error.t
   def publish(messages, %Topic{name: topic}) when is_list(messages)  do
     case Kane.Client.post(path(topic), data(messages)) do
       {:ok, body, _code} ->
@@ -25,11 +42,10 @@ defmodule Kane.Message do
     end
   end
 
-  def publish(message, topic) when is_binary(message) and is_binary(topic) do
-    publish(%__MODULE__{data: message}, %Topic{name: topic})
-  end
-
+  @spec data(t) :: map
   def data(%__MODULE__{}=message), do: data([message])
+
+  @spec data([t]) :: map
   def data(messages) when is_list(messages) do
     %{
       "messages" =>
@@ -44,6 +60,7 @@ defmodule Kane.Message do
     }
   end
 
+  @spec encode_body(any) :: binary
   def encode_body(body) when is_binary(body), do: Base.encode64(body)
   def encode_body(body), do: body |> Poison.encode! |> encode_body
 
