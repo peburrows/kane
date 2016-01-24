@@ -11,13 +11,14 @@ defmodule Kane.Subscription do
     end
   end
 
-  def pull!(%__MODULE__{}=sub) do
+  def pull(%__MODULE__{}=sub) do
     case Kane.Client.post(path(sub, :pull), data(sub, :pull)) do
-      {:ok, "{}", _code} -> {:ok, []}
+      {:ok, body, _code} when body in ["{}", "{}\n"] ->
+        {:ok, []}
       {:ok, body, _code} ->
         {:ok, body
               |> Poison.decode!
-              |> Map.get("receivedMessages")
+              |> Map.get("receivedMessages", [])
               |> Enum.map(fn(m) ->
                   Message.from_subscription!(m)
                 end)
@@ -25,6 +26,17 @@ defmodule Kane.Subscription do
       err -> err
     end
   end
+
+  def ack(%__MODULE__{}=sub, messages) when is_list(messages) do
+    data = %{"ackIds" => Enum.map(messages, fn(m)-> m.ack_id end)}
+    case Kane.Client.post(path(sub, :ack), data) do
+      {:ok, body, _code} ->
+        IO.puts "the ack body: #{body}"
+        :ok
+      err -> err
+    end
+  end
+  def ack(%__MODULE__{}=sub, %Message{}=mess), do: ack(sub, [mess])
 
   def data(%__MODULE__{ack_deadline: ack, topic: %Topic{}=topic}, :create) do
     %{ "topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack }
@@ -41,7 +53,6 @@ defmodule Kane.Subscription do
     case kind do
       :pull -> full_name(sub) <> ":pull"
       :ack  -> full_name(sub) <> ":acknowledge"
-      :pull -> full_name(sub) <> ":pull"
       _     -> full_name(sub)
     end
   end

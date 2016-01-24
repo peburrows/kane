@@ -63,7 +63,7 @@ defmodule Kane.Message do
       id: id,
       publish_time: time,
       ack_id: ack,
-      data: data,
+      data: data |> Base.decode64!,
       attributes: attr
     }}
   end

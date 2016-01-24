@@ -75,10 +75,29 @@ defmodule Kane.SubscriptionTest do
                                         ]})
     end
 
-    assert {:ok, messages} = Subscription.pull!(%Subscription{name: "tasty", topic: %Topic{name: "messages"}})
+    assert {:ok, messages} = Subscription.pull(%Subscription{name: "tasty", topic: %Topic{name: "messages"}})
     assert is_list(messages)
     Enum.each messages, fn(m)->
       assert %Message{} = m
     end
+  end
+
+  test "acknowledging a message", %{bypass: bypass} do
+    Bypass.expect bypass, fn conn ->
+      assert conn.method == "POST"
+
+      {:ok, body, conn} = Plug.Conn.read_body conn
+      body = body |> Poison.decode!
+      assert ["123", "321"] = body["ackIds"]
+
+      Plug.Conn.send_resp conn, 200, "{}\n"
+    end
+
+    messages = [
+      %Message{ack_id: "123"},
+      %Message{ack_id: "321"}
+    ]
+
+    assert :ok == Subscription.ack(%Subscription{name: "ack-my-sub"}, messages)
   end
 end

@@ -73,13 +73,14 @@ defmodule Kane.MessageTest do
     ack = "123"
     id  = "321"
     data= "eyJoZWxsbyI6IndvcmxkIn0="
+    decoded = data |> Base.decode64!
     time= "2016-01-24T03:07:33.195Z"
 
     assert {:ok,
       %Message{ id:     ^id,
                 ack_id: ^ack,
                 publish_time: ^time,
-                data:  ^data,
+                data:  ^decoded,
                 attributes: %{}
       }} = Message.from_subscription(%{"ackId" => ack,
                                         "message" =>
