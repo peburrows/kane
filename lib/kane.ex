@@ -1,6 +1,10 @@
 defmodule Kane do
   @moduledoc """
-  Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub
+  Kane. Citizen Kane. Charles Foster Kane, to be exact, Publisher extraordinaire.
+
+  Rosebud.
+
+  Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
   """
 
   @doc """
