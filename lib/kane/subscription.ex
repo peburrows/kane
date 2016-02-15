@@ -33,9 +33,7 @@ defmodule Kane.Subscription do
   def ack(%__MODULE__{}=sub, messages) when is_list(messages) do
     data = %{"ackIds" => Enum.map(messages, fn(m)-> m.ack_id end)}
     case Kane.Client.post(path(sub, :ack), data) do
-      {:ok, body, _code} ->
-        IO.puts "the ack body: #{body}"
-        :ok
+      {:ok, body, _code} -> :ok
       err -> err
     end
   end
