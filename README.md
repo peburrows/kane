@@ -22,4 +22,18 @@ Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
 
 ## Usage
 
-See [documentation](http://hexdocs.pm/kane) for usage.
+Pull, process and acknowledge messages via a pre-existing subscription:
+
+```elixir
+{:ok, subscription} = Kane.Subscription{topic: %Kane.Topic{name: "my-topic"}}
+{:ok, messages} = Kane.Subscription.pull(subscription)
+
+Enum.each messages, fn(mess)->
+  process_message(mess)
+end
+
+# acknowledge message receipt in bulk
+Kane.Subscription.ack(subscription, messages)
+```
+
+For more details, see the [documentation](http://hexdocs.pm/kane).
