@@ -7,21 +7,21 @@ defmodule Kane.Client do
   @spec get(binary) :: Success.t | Error.t
   def get(path) do
     url(path)
-    |> HTTPoison.get([auth_header])
+    |> HTTPoison.get([auth_header], hackney: [pool: :kane])
     |> handle_response
   end
 
   @spec put(binary, any) :: Success.t | Error.t
   def put(path, data \\ "") do
     url(path)
-    |> HTTPoison.put(Poison.encode!(data), [auth_header])
+    |> HTTPoison.put(Poison.encode!(data), [auth_header], hackney: [pool: :kane])
     |> handle_response
   end
 
   @spec post(binary, any) :: Success.t | Error.t
   def post(path, data) do
     url(path)
-    |> HTTPoison.post(Poison.encode!(data), [auth_header])
+    |> HTTPoison.post(Poison.encode!(data), [auth_header], hackney: [pool: :kane])
     |> handle_response
   end
 
