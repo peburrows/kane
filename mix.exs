@@ -29,8 +29,8 @@ defmodule Kane.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:goth, "~> 0.0.3"},
-    {:poison, "~> 1.5.2"},
+    [{:goth, "~> 0.1.1"},
+    {:poison, "~> 1.5 or ~> 2.1"},
     {:httpoison, "~> 0.8.0"},
     {:bypass, "~> 0.1", only: :test},
     {:mix_test_watch, "~> 0.2.5", only: :dev},
