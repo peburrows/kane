@@ -3,7 +3,7 @@
   "cowboy": {:hex, :cowboy, "1.0.4"},
   "cowlib": {:hex, :cowlib, "1.0.2"},
   "earmark": {:hex, :earmark, "0.2.1"},
-  "ex_doc": {:hex, :ex_doc, "0.11.3"},
+  "ex_doc": {:hex, :ex_doc, "0.11.5"},
   "fs": {:hex, :fs, "0.9.2"},
   "goth": {:hex, :goth, "0.1.1"},
   "hackney": {:hex, :hackney, "1.6.0"},
@@ -12,10 +12,10 @@
   "json_web_token": {:hex, :json_web_token, "0.2.5"},
   "metrics": {:hex, :metrics, "1.0.1"},
   "mimerl": {:hex, :mimerl, "1.0.2"},
-  "mix_test_watch": {:hex, :mix_test_watch, "0.2.5"},
-  "plug": {:hex, :plug, "1.1.0"},
+  "mix_test_watch": {:hex, :mix_test_watch, "0.2.6"},
+  "plug": {:hex, :plug, "1.1.4"},
   "poison": {:hex, :poison, "2.1.0"},
   "ranch": {:hex, :ranch, "1.2.1"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.0"},
   "ssl_verify_hostname": {:hex, :ssl_verify_hostname, "1.0.5"},
-  "uuid": {:hex, :uuid, "1.1.2"}}
+  "uuid": {:hex, :uuid, "1.1.3"}}
