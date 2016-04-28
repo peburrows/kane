@@ -83,6 +83,7 @@ defmodule Kane.Topic do
   """
   @spec full_name(t) :: String.t
   def full_name(%__MODULE__{name: name}), do: path(name)
+  def full_name(name), do: full_name(%__MODULE__{name: name})
 
   defp with_name(name), do: %__MODULE__{name: strip!(name)}
 
