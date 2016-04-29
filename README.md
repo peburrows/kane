@@ -19,10 +19,10 @@ Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
     json: "path/to/google/json/creds.json" |> File.read!
   ```
 
-3. Ensure Goth is started before your application:
+3. Ensure Kane is started before your application:
   ```elixir
   def application do
-    [applications: [:goth]]
+    [applications: [:kane]]
   end
   ```
 
