@@ -3,7 +3,7 @@ defmodule Kane.Mixfile do
 
   def project do
     [app: :kane,
-     version: "0.1.0",
+     version: "0.1.1",
      elixir: "~> 1.2",
      package: package,
      description: description,
@@ -29,7 +29,7 @@ defmodule Kane.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:goth, "~> 0.1.1"},
+    [{:goth, "~> 0.1"},
     {:poison, "~> 1.5 or ~> 2.1"},
     {:httpoison, "~> 0.8.0"},
     {:bypass, "~> 0.1", only: :test},
