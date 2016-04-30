@@ -4,6 +4,8 @@ defmodule Kane.Client do
 
   @token_mod Application.get_env(:kane, :token, Goth.Token)
 
+  @moduledoc false
+
   @spec get(binary) :: Success.t | Error.t
   def get(path) do
     url(path)

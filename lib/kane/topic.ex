@@ -34,7 +34,7 @@ defmodule Kane.Topic do
   end
 
   @doc """
-  Retrieve all the topics from the API. **NOTE:** `Subscription.all/0` doesn't currently support pagination,
+  Retrieve all the topics from the API. **NOTE:** `Topic.all/0` doesn't currently support pagination,
   so if you have more than 100 topics, you won't be able to retrieve all of them.
   """
   @spec all :: {:ok, [t]} | Error.t
