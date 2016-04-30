@@ -43,4 +43,20 @@ end
 Kane.Subscription.ack(subscription, messages)
 ```
 
+Send message via pre-existing subscription
+```elixir
+topic   = %Kane.Topic{name: "my-topic"}
+message = %Kane.Message{data: %{"hello": "world"}, attributes: %{"random" => "attr"}}
+
+result  = Kane.Message.publish(message, topic)
+
+case result do 
+  {:ok, _return}    -> IO.puts("It worked!")
+  {:error, _reason} -> IO.puts("Should we try again?")
+end
+```
+Hints: 
+- Attributes have to be Strings (https://cloud.google.com/pubsub/reference/rest/v1/PubsubMessage)
+- We base64-encode the message by default (only mandatory when using json - https://cloud.google.com/pubsub/publisher)
+
 For more details, see the [documentation](http://hexdocs.pm/kane).
