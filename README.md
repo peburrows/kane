@@ -43,7 +43,7 @@ end
 Kane.Subscription.ack(subscription, messages)
 ```
 
-Send message via pre-existing subscription
+Send message via pre-existing subscription:
 ```elixir
 topic   = %Kane.Topic{name: "my-topic"}
 message = %Kane.Message{data: %{"hello": "world"}, attributes: %{"random" => "attr"}}
