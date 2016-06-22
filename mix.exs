@@ -7,8 +7,6 @@ defmodule Kane.Mixfile do
      elixir: "~> 1.2",
      package: package,
      description: description,
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
      deps: deps]
   end
 
