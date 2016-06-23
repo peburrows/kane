@@ -3,12 +3,10 @@ defmodule Kane.Mixfile do
 
   def project do
     [app: :kane,
-     version: "0.1.1",
+     version: "0.1.2",
      elixir: "~> 1.2",
      package: package,
      description: description,
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
      deps: deps]
   end
 
