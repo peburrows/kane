@@ -22,7 +22,7 @@ defmodule Kane.Subscription do
   def find(name) do
     case Client.get(find_path(name)) do
       {:ok, body, _code} ->
-        {:ok, body |> Poison.decode! |> Map.get("name") |> with_name}
+        {:ok, from_json(body)}
       err -> err
     end
   end
@@ -89,8 +89,14 @@ defmodule Kane.Subscription do
     "projects/#{project}/subscriptions/#{name}"
   end
 
-  defp with_name(name), do: %__MODULE__{name: strip!(name)}
-
-  @spec strip!(String.s) :: String.s
   def strip!(name), do: String.replace(name, ~r(^#{find_path}/?), "")
+
+  defp from_json(json) do
+    data = Poison.decode!(json)
+    %__MODULE__{
+      name: Map.get(data, "name"),
+      ack_deadline: Map.get(data, "ackDeadlineSeconds"),
+      topic: %Topic{name: Map.get(data, "topic")}
+    }
+  end
 end
