@@ -9,7 +9,7 @@ Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
 1. Add Kane to your list of dependencies in `mix.exs`:
   ```elixir
   def deps do
-    [{:kane, "~> 0.1.2"}]
+    [{:kane, "~> 0.2.0"}]
   end
   ```
 
