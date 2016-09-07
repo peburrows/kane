@@ -111,6 +111,21 @@ defmodule Kane.SubscriptionTest do
     end
   end
 
+  test "pulling from a subscription passes the correct maxMessages value", %{bypass: bypass, project: project} do
+    Bypass.expect bypass, fn conn ->
+      assert conn.method == "POST"
+      assert Regex.match?(~r(:pull$), conn.request_path)
+
+      {:ok, body, conn} = Plug.Conn.read_body conn
+      data = Poison.decode!(body)
+      assert data["maxMessages"] == 2
+
+      Plug.Conn.send_resp conn, 200, ~s({"recievedMessages": []})
+    end
+
+    assert {:ok, []} = Subscription.pull(%Subscription{name: "capped", topic: "sure"}, 2)
+  end
+
   test "acknowledging a message", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
