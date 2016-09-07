@@ -2,6 +2,9 @@ defmodule Kane.Subscription do
   defstruct name: nil, topic: nil, ack_deadline: 10
   alias Kane.Topic
   alias Kane.Message
+  alias Kane.Client
+
+  @type s :: %__MODULE__{name: binary}
 
   def create(%__MODULE__{}=sub) do
     case Kane.Client.put(path(sub, :create), data(sub, :create)) do
@@ -11,11 +14,24 @@ defmodule Kane.Subscription do
     end
   end
 
+  @doc """
+  Find a subscription by name. The name can be either a short name (`my-subscription`)
+  or the fully-qualified name (`projects/my-project/subscriptions/my-subscription`)
+  """
+  @spec find(String.s) :: {:ok, s} | Error.s
+  def find(name) do
+    case Client.get(find_path(name)) do
+      {:ok, body, _code} ->
+        {:ok, from_json(body)}
+      err -> err
+    end
+  end
+
   def delete(%__MODULE__{name: name}), do: delete(name)
   def delete(name), do: Kane.Client.delete(path(name, :delete))
 
-  def pull(%__MODULE__{}=sub) do
-    case Kane.Client.post(path(sub, :pull), data(sub, :pull)) do
+  def pull(%__MODULE__{}=sub, maxMessages \\ 100) do
+    case Kane.Client.post(path(sub, :pull), data(sub, :pull, maxMessages)) do
       {:ok, body, _code} when body in ["{}", "{}\n"] ->
         {:ok, []}
       {:ok, body, _code} ->
@@ -43,12 +59,20 @@ defmodule Kane.Subscription do
     %{ "topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack }
   end
 
-  def data(%__MODULE__{}, :pull) do
+  def data(%__MODULE__{}, :pull, max) do
     %{
       "returnImmediately": true,
-      "maxMessages": 100,
+      "maxMessages": max,
     }
   end
+
+  defp project do
+    {:ok, project} = Goth.Config.get(:project_id)
+    project
+  end
+
+  defp find_path, do: "projects/#{project}/subscriptions"
+  defp find_path(subscription), do: "#{find_path}/#{strip!(subscription)}"
 
   def path(%__MODULE__{name: name}, kind), do: path(name, kind)
   def path(name, kind) do
@@ -63,5 +87,16 @@ defmodule Kane.Subscription do
   def full_name(name) do
     {:ok, project} = Goth.Config.get(:project_id)
     "projects/#{project}/subscriptions/#{name}"
+  end
+
+  def strip!(name), do: String.replace(name, ~r(^#{find_path}/?), "")
+
+  defp from_json(json) do
+    data = Poison.decode!(json)
+    %__MODULE__{
+      name: Map.get(data, "name"),
+      ack_deadline: Map.get(data, "ackDeadlineSeconds"),
+      topic: %Topic{name: Map.get(data, "topic")}
+    }
   end
 end

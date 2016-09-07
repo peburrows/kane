@@ -28,6 +28,24 @@ defmodule Kane.SubscriptionTest do
       } == Subscription.data(sub, :create)
   end
 
+  test "finding a subscription", %{bypass: bypass, project: project} do
+    name  = "found-sub"
+    topic = "found-sub-topic"
+    Bypass.expect bypass, fn conn ->
+      assert conn.method == "GET"
+      assert Regex.match?(~r{projects/#{project}/subscriptions/#{name}}, conn.request_path)
+      Plug.Conn.send_resp conn, 200, Poison.encode!(%{name: name, topic: topic, ackDeadlineSeconds: 20})
+    end
+
+    assert {:ok,
+            %Subscription{
+              name: ^name,
+              topic: %Topic{name: ^topic},
+              ack_deadline: 20
+            }
+    } = Subscription.find(name)
+  end
+
   test "creating a subscription", %{bypass: bypass, project: project} do
     name = "create-sub"
     topic= "topic-to-sub"
@@ -91,6 +109,21 @@ defmodule Kane.SubscriptionTest do
     Enum.each messages, fn(m)->
       assert %Message{} = m
     end
+  end
+
+  test "pulling from a subscription passes the correct maxMessages value", %{bypass: bypass, project: project} do
+    Bypass.expect bypass, fn conn ->
+      assert conn.method == "POST"
+      assert Regex.match?(~r(:pull$), conn.request_path)
+
+      {:ok, body, conn} = Plug.Conn.read_body conn
+      data = Poison.decode!(body)
+      assert data["maxMessages"] == 2
+
+      Plug.Conn.send_resp conn, 200, ~s({"recievedMessages": []})
+    end
+
+    assert {:ok, []} = Subscription.pull(%Subscription{name: "capped", topic: "sure"}, 2)
   end
 
   test "acknowledging a message", %{bypass: bypass} do
