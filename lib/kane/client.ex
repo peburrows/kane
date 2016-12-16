@@ -14,14 +14,14 @@ defmodule Kane.Client do
   @spec put(binary, any) :: Success.t | Error.t
   def put(path, data \\ "") do
     url(path)
-    |> HTTPoison.put(Poison.encode!(data), [auth_header])
+    |> HTTPoison.put(encode!(data), [auth_header])
     |> handle_response
   end
 
   @spec post(binary, any) :: Success.t | Error.t
   def post(path, data) do
     url(path)
-    |> HTTPoison.post(Poison.encode!(data), [auth_header])
+    |> HTTPoison.post(encode!(data), [auth_header])
     |> handle_response
   end
 
@@ -52,4 +52,7 @@ defmodule Kane.Client do
         {:error, response.body, err}
     end
   end
+
+  defp encode!(""), do: ""
+  defp encode!(data), do: Poison.encode!(data)
 end
