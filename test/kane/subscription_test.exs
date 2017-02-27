@@ -46,7 +46,7 @@ defmodule Kane.SubscriptionTest do
     } = Subscription.find(name)
   end
 
-  test "creating a subscription", %{bypass: bypass, project: project} do
+  test "creating a subscription", %{bypass: bypass} do
     name = "create-sub"
     topic= "topic-to-sub"
     sub  = %Subscription{name: name, topic: %Topic{name: topic}}
@@ -86,7 +86,7 @@ defmodule Kane.SubscriptionTest do
     Subscription.delete(name)
   end
 
-  test "pulling from a subscription", %{bypass: bypass, project: project} do
+  test "pulling from a subscription", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
       assert Regex.match?(~r(:pull$), conn.request_path)
@@ -111,7 +111,7 @@ defmodule Kane.SubscriptionTest do
     end
   end
 
-  test "pulling from a subscription passes the correct maxMessages value", %{bypass: bypass, project: project} do
+  test "pulling from a subscription passes the correct maxMessages value", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
       assert Regex.match?(~r(:pull$), conn.request_path)

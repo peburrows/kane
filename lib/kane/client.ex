@@ -7,37 +7,37 @@ defmodule Kane.Client do
   @spec get(binary) :: Success.t | Error.t
   def get(path) do
     url(path)
-    |> HTTPoison.get([auth_header])
+    |> HTTPoison.get([auth_header()])
     |> handle_response
   end
 
   @spec put(binary, any) :: Success.t | Error.t
   def put(path, data \\ "") do
     url(path)
-    |> HTTPoison.put(encode!(data), [auth_header])
+    |> HTTPoison.put(encode!(data), [auth_header()])
     |> handle_response
   end
 
   @spec post(binary, any) :: Success.t | Error.t
   def post(path, data) do
     url(path)
-    |> HTTPoison.post(encode!(data), [auth_header])
+    |> HTTPoison.post(encode!(data), [auth_header()])
     |> handle_response
   end
 
   @spec delete(binary) :: Success.t | Error.t
   def delete(path) do
     url(path)
-    |> HTTPoison.delete([auth_header])
+    |> HTTPoison.delete([auth_header()])
     |> handle_response
   end
 
-  defp url(path), do: Path.join([endpoint, path])
+  defp url(path), do: Path.join([endpoint(), path])
 
   defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
 
   defp auth_header do
-    {:ok, token} = @token_mod.for_scope(Kane.oauth_scope)
+    {:ok, token} = @token_mod.for_scope(Kane.oauth_scope())
     {"Authorization", "#{token.type} #{token.token}"}
   end
 

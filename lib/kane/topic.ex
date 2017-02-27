@@ -88,10 +88,10 @@ defmodule Kane.Topic do
   defp with_name(name), do: %__MODULE__{name: strip!(name)}
 
   defp project do
-    {:ok, project} = Goth.Config.get(:project_id)
-    project
+    {:ok, id} = Goth.Config.get(:project_id)
+    id
   end
 
-  defp path, do: "projects/#{project}/topics"
-  defp path(topic), do: "#{path}/#{strip!(topic)}"
+  defp path, do: "projects/#{project()}/topics"
+  defp path(topic), do: "#{path()}/#{strip!(topic)}"
 end

@@ -71,8 +71,8 @@ defmodule Kane.Subscription do
     project
   end
 
-  defp find_path, do: "projects/#{project}/subscriptions"
-  defp find_path(subscription), do: "#{find_path}/#{strip!(subscription)}"
+  defp find_path, do: "projects/#{project()}/subscriptions"
+  defp find_path(subscription), do: "#{find_path()}/#{strip!(subscription)}"
 
   def path(%__MODULE__{name: name}, kind), do: path(name, kind)
   def path(name, kind) do
@@ -89,7 +89,7 @@ defmodule Kane.Subscription do
     "projects/#{project}/subscriptions/#{name}"
   end
 
-  def strip!(name), do: String.replace(name, ~r(^#{find_path}/?), "")
+  def strip!(name), do: String.replace(name, ~r(^#{find_path()}/?), "")
 
   defp from_json(json) do
     data = Poison.decode!(json)
