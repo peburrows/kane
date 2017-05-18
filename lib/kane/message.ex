@@ -3,11 +3,11 @@ defmodule Kane.Message do
   alias Kane.Client.Response.Error
 
   @type t :: %__MODULE__{
-    id: String.t,
+    id: String.t | nil,
     attributes: Map.t,
     data: any,
-    ack_id: String.t,
-    publish_time: String.t
+    ack_id: String.t | nil,
+    publish_time: String.t | nil
   }
 
   defstruct id: nil, attributes: %{}, data: nil, ack_id: nil, publish_time: nil
