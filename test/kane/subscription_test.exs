@@ -59,6 +59,7 @@ defmodule Kane.SubscriptionTest do
 
       assert body == %{"topic" => tname, "ackDeadlineSeconds" => sub.ack_deadline} |> Poison.encode!
       assert conn.method == "PUT"
+      assert_content_type(conn, "application/json")
 
       Plug.Conn.send_resp conn, 201, ~s({
                                            "name": "#{sname}",
@@ -89,6 +90,7 @@ defmodule Kane.SubscriptionTest do
   test "pulling from a subscription", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
       assert Regex.match?(~r(:pull$), conn.request_path)
       Plug.Conn.send_resp conn, 200, ~s({"receivedMessages": [
                                           {"ackId":"123",
@@ -114,6 +116,7 @@ defmodule Kane.SubscriptionTest do
   test "pulling from a subscription passes the correct maxMessages value", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
       assert Regex.match?(~r(:pull$), conn.request_path)
 
       {:ok, body, conn} = Plug.Conn.read_body conn
@@ -129,6 +132,7 @@ defmodule Kane.SubscriptionTest do
   test "acknowledging a message", %{bypass: bypass} do
     Bypass.expect bypass, fn conn ->
       assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
 
       {:ok, body, conn} = Plug.Conn.read_body conn
       body = body |> Poison.decode!
@@ -143,5 +147,12 @@ defmodule Kane.SubscriptionTest do
     ]
 
     assert :ok == Subscription.ack(%Subscription{name: "ack-my-sub"}, messages)
+  end
+
+  defp assert_content_type(conn, type) do
+    {"content-type", content_type} = Enum.find(conn.req_headers, fn({prop, _}) ->
+      prop == "content-type"
+    end)
+    assert String.contains?(content_type, type)
   end
 end

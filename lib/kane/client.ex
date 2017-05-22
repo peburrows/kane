@@ -5,30 +5,25 @@ defmodule Kane.Client do
   @token_mod Application.get_env(:kane, :token, Goth.Token)
 
   @spec get(binary) :: Success.t | Error.t
-  def get(path) do
-    url(path)
-    |> HTTPoison.get([auth_header()])
-    |> handle_response
-  end
+  def get(path), do: call(:get, path)
 
   @spec put(binary, any) :: Success.t | Error.t
-  def put(path, data \\ "") do
-    url(path)
-    |> HTTPoison.put(encode!(data), [auth_header()])
-    |> handle_response
-  end
+  def put(path, data \\ ""), do: call(:put, path, data)
 
   @spec post(binary, any) :: Success.t | Error.t
-  def post(path, data) do
-    url(path)
-    |> HTTPoison.post(encode!(data), [auth_header()])
-    |> handle_response
-  end
+  def post(path, data), do: call(:post, path, data)
 
   @spec delete(binary) :: Success.t | Error.t
-  def delete(path) do
-    url(path)
-    |> HTTPoison.delete([auth_header()])
+  def delete(path), do: call(:delete, path)
+
+  defp call(method, path) do
+    headers = [auth_header()]
+    apply(HTTPoison, method, [url(path), headers])
+    |> handle_response
+  end
+  defp call(method, path, data) do
+    headers = [auth_header(), {"content-type", "application/json"}]
+    apply(HTTPoison, method, [url(path), encode!(data), headers])
     |> handle_response
   end
 
