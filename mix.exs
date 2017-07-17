@@ -15,13 +15,13 @@ defmodule Kane.Mixfile do
   end
 
   defp deps do
-    [{:goth, "~> 0.3"},
-    {:poison, "~> 1.5 or ~> 2.1"},
+    [{:goth, "~> 0.5"},
+    {:poison, "~> 1.5 or ~> 2.2 or ~> 3.1"},
     {:httpoison, "~> 0.11"},
     {:bypass, "~> 0.1", only: :test},
-    {:mix_test_watch, "~> 0.2.5", only: :dev},
-    {:ex_doc, "~> 0.11.3", only: [:dev]},
-    {:earmark, "~> 0.2", only: [:dev]},
+    {:mix_test_watch, "~> 0.4", only: :dev},
+    {:ex_doc, "~> 0.16", only: [:dev]},
+    {:earmark, "~> 1.2", only: [:dev]},
     {:uuid, "~> 1.1", only: :test}]
   end
 
