@@ -58,7 +58,7 @@ case result do
 end
 ```
 Hints: 
-- Attributes have to be Strings (https://cloud.google.com/pubsub/reference/rest/v1/PubsubMessage)
+- Attributes have to be Strings (https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage)
 - We base64-encode the message by default (only mandatory when using json - https://cloud.google.com/pubsub/publisher)
 
 For more details, see the [documentation](http://hexdocs.pm/kane).
