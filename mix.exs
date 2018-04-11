@@ -2,12 +2,14 @@ defmodule Kane.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :kane,
-     version: "0.4.1",
-     elixir: "~> 1.4",
-     package: package(),
-     description: description(),
-     deps: deps()]
+    [
+      app: :kane,
+      version: "0.4.2",
+      elixir: "~> 1.4",
+      package: package(),
+      description: description(),
+      deps: deps()
+    ]
   end
 
   def application do
@@ -15,14 +17,16 @@ defmodule Kane.Mixfile do
   end
 
   defp deps do
-    [{:goth, "~> 0.5"},
-    {:poison, "~> 1.5 or ~> 2.2 or ~> 3.1"},
-    {:httpoison, "~> 0.11"},
-    {:bypass, "~> 0.1", only: :test},
-    {:mix_test_watch, "~> 0.4", only: :dev},
-    {:ex_doc, "~> 0.16", only: [:dev]},
-    {:earmark, "~> 1.2", only: [:dev]},
-    {:uuid, "~> 1.1", only: :test}]
+    [
+      {:goth, "~> 0.5"},
+      {:poison, "~> 1.5 or ~> 2.2 or ~> 3.1"},
+      {:httpoison, "~> 0.11"},
+      {:bypass, "~> 0.1", only: :test},
+      {:mix_test_watch, "~> 0.4", only: :dev},
+      {:ex_doc, "~> 0.16", only: [:dev]},
+      {:earmark, "~> 1.2", only: [:dev]},
+      {:uuid, "~> 1.1", only: :test}
+    ]
   end
 
   defp description do
