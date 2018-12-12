@@ -18,6 +18,14 @@ defmodule Kane.SubscriptionTest do
     assert "projects/#{project}/subscriptions/#{name}" == Subscription.path(sub, :create)
   end
 
+  test "generating the create path from topic", %{project: project} do
+    name = "sub-json"
+    topic = "sub-json-topic"
+    sub = %Subscription{name: name, topic: %Topic{name: topic}}
+
+    assert "projects/#{project}/subscriptions/#{name}:pull" == Subscription.path(sub, :pull)
+  end
+
   test "creating the JSON for creating a subscription", %{project: project} do
     name = "sub-json"
     topic= "sub-json-topic"

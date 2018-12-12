@@ -57,7 +57,7 @@ defmodule Kane.Subscription do
   def ack(%__MODULE__{}=sub, %Message{}=mess), do: ack(sub, [mess])
 
   def data(%__MODULE__{ack_deadline: ack, topic: %Topic{}=topic}, :create) do
-    %{ "topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack }
+    %{"topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack}
   end
 
   def data(%__MODULE__{}, :pull, max) do

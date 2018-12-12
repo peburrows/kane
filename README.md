@@ -34,7 +34,10 @@ Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
 Pull, process and acknowledge messages via a pre-existing subscription:
 
 ```elixir
-subscription = %Kane.Subscription{topic: %Kane.Topic{name: "my-topic"}}
+subscription = %Kane.Subscription{
+  name: "project-name",
+  topic: %Kane.Topic{name: "my-topic"}
+}
 {:ok, messages} = Kane.Subscription.pull(subscription)
 
 Enum.each messages, fn(mess)->
