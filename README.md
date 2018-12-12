@@ -35,7 +35,7 @@ Pull, process and acknowledge messages via a pre-existing subscription:
 
 ```elixir
 subscription = %Kane.Subscription{
-  name: "project-name",
+  name: "my-subscription",
   topic: %Kane.Topic{name: "my-topic"}
 }
 {:ok, messages} = Kane.Subscription.pull(subscription)
