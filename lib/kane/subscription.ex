@@ -15,8 +15,9 @@ defmodule Kane.Subscription do
   end
 
   @doc """
-  Find a subscription by name. The name can be either a short name (`my-subscription`)
-  or the fully-qualified name (`projects/my-project/subscriptions/my-subscription`)
+  Find a subscription by name. The name can be either a short name
+  (`my-subscription`) or the fully-qualified name
+  (`projects/my-project/subscriptions/my-subscription`).
   """
   @spec find(String.s) :: {:ok, s} | Error.s
   def find(name) do
@@ -61,8 +62,8 @@ defmodule Kane.Subscription do
 
   def data(%__MODULE__{}, :pull, max) do
     %{
-      "returnImmediately": true,
-      "maxMessages": max,
+      "returnImmediately" => true,
+      "maxMessages" => max,
     }
   end
 

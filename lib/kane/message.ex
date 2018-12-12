@@ -74,7 +74,8 @@ defmodule Kane.Message do
     message
   end
 
-  def from_subscription(%{"ackId" => ack, "message" => %{"publishTime" => time, "messageId" => id} = message }) do
+  def from_subscription(%{"ackId" => ack, "message" =>
+      %{"publishTime" => time, "messageId" => id} = message }) do
     attr = Map.get(message, "attributes", %{})
     data = case Map.get(message, "data", nil) do
              nil -> nil

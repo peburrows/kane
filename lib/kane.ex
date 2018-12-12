@@ -1,6 +1,7 @@
 defmodule Kane do
   @moduledoc """
-  Kane. Citizen Kane. Charles Foster Kane, to be exact, Publisher extraordinaire.
+  Kane. Citizen Kane. Charles Foster Kane, to be exact, Publisher
+  extraordinaire.
 
   Rosebud.
 

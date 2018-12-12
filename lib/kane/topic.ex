@@ -1,11 +1,13 @@
 defmodule Kane.Topic do
   @moduledoc """
-  A `Kane.Topic` is used to interact with and create a topic within the Pub/Sub API.
+  A `Kane.Topic` is used to interact with and create a topic within the Pub/Sub
+  API.
 
   Setting up and pulling from a subscription is straightforward:
 
       # for the most part, names can be include the project prefix or not
-      {:ok, subscription} = Kane.Subscription{topic: %Kane.Topic{name: "my-topic"}}
+      topic = %Kane.Topic{name: "my-topic"}
+      {:ok, subscription} = Kane.Subscription{topic: topic}
       {:ok, messages} = Kane.Subscription.pull(subscription)
       Enum.each messages, fn(mess)->
         process_message(mess)
@@ -34,12 +36,13 @@ defmodule Kane.Topic do
   end
 
   @doc """
-  Retrieve all the topics from the API. **NOTE:** `Subscription.all/0` doesn't currently support pagination,
-  so if you have more than 100 topics, you won't be able to retrieve all of them.
+  Retrieve all the topics from the API. **NOTE:** `Subscription.all/0` doesn't
+  currently support pagination, so if you have more than 100 topics, you won't
+  be able to retrieve all of them.
   """
   @spec all :: {:ok, [t]} | Error.t
   def all do
-    case Client.get(path) do
+    case Client.get(path()) do
       {:ok, body, _code} ->
         {:ok, %{"topics" => topics}} = Poison.decode(body)
         {:ok, (Enum.map topics, fn(t) ->
@@ -73,10 +76,11 @@ defmodule Kane.Topic do
       "my-topic"
   """
   @spec strip!(String.t) :: String.t
-  def strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
+  def strip!(name), do: String.replace(name, ~r(^#{path()}/?), "")
 
   @doc """
-  Adds the project and topic prefix (if necessary) to create a fully-qualified topic name
+  Adds the project and topic prefix (if necessary) to create a fully-qualified
+  topic name
 
       iex> Kane.Topic.full_name(%Kane.Topic{name: "my-topic"})
       "projects/my-project/topics/my-topic"
@@ -92,6 +96,6 @@ defmodule Kane.Topic do
     id
   end
 
-  defp path, do: "projects/#{project()}/topics"
+  defp path(), do: "projects/#{project()}/topics"
   defp path(topic), do: "#{path()}/#{strip!(topic)}"
 end

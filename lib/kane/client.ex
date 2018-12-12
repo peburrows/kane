@@ -2,6 +2,8 @@ defmodule Kane.Client do
   alias Response.Success
   alias Response.Error
 
+  @default_endpoint "https://pubsub.googleapis.com/v1"
+
   @spec get(binary) :: Success.t() | Error.t()
   def get(path), do: call(:get, path)
 
@@ -30,8 +32,10 @@ defmodule Kane.Client do
 
   defp url(path), do: Path.join([endpoint(), path])
 
-  defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
-  defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
+  defp endpoint(),
+    do: Application.get_env(:kane, :endpoint, @default_endpoint)
+  defp token_mod(),
+    do: Application.get_env(:kane, :token, Goth.Token)
 
   defp auth_header do
     {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
