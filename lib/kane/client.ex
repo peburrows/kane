@@ -52,5 +52,5 @@ defmodule Kane.Client do
   end
 
   defp encode!(""), do: ""
-  defp encode!(data), do: Poison.encode!(data)
+  defp encode!(data), do: Jason.encode!(data)
 end
