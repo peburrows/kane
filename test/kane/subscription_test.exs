@@ -130,11 +130,33 @@ defmodule Kane.SubscriptionTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       data = Jason.decode!(body)
       assert data["maxMessages"] == 2
+      assert data["returnImmediately"] == true
 
       Plug.Conn.send_resp(conn, 200, ~s({"recievedMessages": []}))
     end)
 
     assert {:ok, []} = Subscription.pull(%Subscription{name: "capped", topic: "sure"}, 2)
+  end
+
+  test "pulling from a subscription passes the correct options", %{bypass: bypass} do
+    Bypass.expect(bypass, fn conn ->
+      assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
+      assert Regex.match?(~r(:pull$), conn.request_path)
+
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      data = Jason.decode!(body)
+      assert data["maxMessages"] == 5
+      assert data["returnImmediately"] == false
+
+      Plug.Conn.send_resp(conn, 200, ~s({"receivedMessages": []}))
+    end)
+
+    assert {:ok, []} =
+             Subscription.pull(%Subscription{name: "capped", topic: "sure"},
+               max_messages: 5,
+               return_immediately: false
+             )
   end
 
   test "acknowledging a message", %{bypass: bypass} do

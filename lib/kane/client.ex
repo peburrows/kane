@@ -2,29 +2,29 @@ defmodule Kane.Client do
   alias Response.Success
   alias Response.Error
 
-  @spec get(binary) :: Success.t() | Error.t()
-  def get(path), do: call(:get, path)
+  @spec get(binary, keyword) :: Success.t() | Error.t()
+  def get(path, options \\ []), do: call(:get, path, options)
 
-  @spec put(binary, any) :: Success.t() | Error.t()
-  def put(path, data \\ ""), do: call(:put, path, data)
+  @spec put(binary, any, keyword) :: Success.t() | Error.t()
+  def put(path, data \\ "", options \\ []), do: call(:put, path, data, options)
 
-  @spec post(binary, any) :: Success.t() | Error.t()
-  def post(path, data), do: call(:post, path, data)
+  @spec post(binary, any, keyword) :: Success.t() | Error.t()
+  def post(path, data, options \\ []), do: call(:post, path, data, options)
 
-  @spec delete(binary) :: Success.t() | Error.t()
-  def delete(path), do: call(:delete, path)
+  @spec delete(binary, keyword) :: Success.t() | Error.t()
+  def delete(path, options \\ []), do: call(:delete, path, options)
 
-  defp call(method, path) do
+  defp call(method, path, options) do
     headers = [auth_header()]
 
-    apply(HTTPoison, method, [url(path), headers])
+    apply(HTTPoison, method, [url(path), headers, options])
     |> handle_response
   end
 
-  defp call(method, path, data) do
+  defp call(method, path, data, options) do
     headers = [auth_header(), {"content-type", "application/json"}]
 
-    apply(HTTPoison, method, [url(path), encode!(data), headers])
+    apply(HTTPoison, method, [url(path), encode!(data), headers, options])
     |> handle_response
   end
 

@@ -32,8 +32,18 @@ defmodule Kane.Subscription do
   def delete(%__MODULE__{name: name}), do: delete(name)
   def delete(name), do: Kane.Client.delete(path(name, :delete))
 
-  def pull(%__MODULE__{} = sub, maxMessages \\ 100) do
-    case Kane.Client.post(path(sub, :pull), data(sub, :pull, maxMessages)) do
+  def pull(sub, options \\ [])
+
+  def pull(%__MODULE__{} = sub, max_messages) when is_integer(max_messages) do
+    pull(sub, max_messages: max_messages)
+  end
+
+  def pull(%__MODULE__{} = sub, options) do
+    case Kane.Client.post(
+           path(sub, :pull),
+           data(sub, :pull, options),
+           http_options(options)
+         ) do
       {:ok, body, _code} when body in ["{}", "{}\n"] ->
         {:ok, []}
 
@@ -66,10 +76,10 @@ defmodule Kane.Subscription do
     %{"topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack}
   end
 
-  def data(%__MODULE__{}, :pull, max) do
+  def data(%__MODULE__{}, :pull, options) do
     %{
-      returnImmediately: true,
-      maxMessages: max
+      returnImmediately: Keyword.get(options, :return_immediately, true),
+      maxMessages: Keyword.get(options, :max_messages, 100)
     }
   end
 
@@ -108,5 +118,12 @@ defmodule Kane.Subscription do
       ack_deadline: Map.get(data, "ackDeadlineSeconds"),
       topic: %Topic{name: Map.get(data, "topic")}
     }
+  end
+
+  defp http_options(options) do
+    case Keyword.get(options, :return_immediately, true) do
+      false -> [recv_timeout: :infinity]
+      _ -> []
+    end
   end
 end
