@@ -159,6 +159,52 @@ defmodule Kane.SubscriptionTest do
              )
   end
 
+  test "streaming messages from subscription", %{bypass: bypass} do
+    pid = self()
+
+    Bypass.expect(bypass, fn conn ->
+      assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
+      assert Regex.match?(~r(:pull$), conn.request_path)
+      send(pid, :subscription_pull)
+      {:ok, _body, conn} = Plug.Conn.read_body(conn)
+
+      Plug.Conn.send_resp(conn, 200, ~s({"receivedMessages": [
+                                          {"ackId":"123",
+                                            "message": {
+                                              "messageId": "messId",
+                                              "publishTime": "2015-10-02T15:01:23.045123456Z",
+                                              "attributes": {
+                                                "key" : "val"
+                                              },
+                                              "data": "eyJoZWxsbyI6IndvcmxkIn0="
+                                            }
+                                          },
+                                          {"ackId":"456",
+                                            "message": {
+                                              "messageId": "messId",
+                                              "publishTime": "2015-10-02T15:01:23.045123456Z",
+                                              "attributes": {
+                                                "key" : "val"
+                                              },
+                                              "data": "eyJoZWxsbyI6IndvcmxkIn0="
+                                            }
+                                          }
+                                        ]}))
+    end)
+
+    messages =
+      %Subscription{name: "capped", topic: "sure"}
+      |> Subscription.stream()
+      |> Enum.take(3)
+
+    assert length(messages) == 3
+
+    assert_received :subscription_pull
+    assert_received :subscription_pull
+    refute_received :subscription_pull
+  end
+
   test "acknowledging a message", %{bypass: bypass} do
     Bypass.expect(bypass, fn conn ->
       assert conn.method == "POST"

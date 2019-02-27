@@ -61,6 +61,27 @@ defmodule Kane.Subscription do
     end
   end
 
+  def stream(%__MODULE__{} = sub, options \\ []) do
+    options = Keyword.put(options, :return_immediately, false)
+
+    Stream.resource(
+      fn -> :ok end,
+      fn acc ->
+        case pull(sub, options) do
+          {:ok, messages} ->
+            {messages, acc}
+
+          err ->
+            {:halt, err}
+        end
+      end,
+      fn
+        :ok -> nil
+        err -> throw(err)
+      end
+    )
+  end
+
   def ack(%__MODULE__{} = sub, messages) when is_list(messages) do
     data = %{"ackIds" => Enum.map(messages, fn m -> m.ack_id end)}
 
