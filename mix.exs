@@ -4,7 +4,7 @@ defmodule Kane.Mixfile do
   def project do
     [
       app: :kane,
-      version: "0.5.0",
+      version: "0.6.0-beta",
       elixir: "~> 1.4",
       package: package(),
       description: description(),
@@ -13,18 +13,18 @@ defmodule Kane.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :goth]]
+    []
+    # [applications: [:logger, :goth]]
   end
 
   defp deps do
     [
-      {:goth, "~> 0.8"},
-      {:poison, "~> 1.5 or ~> 2.2 or ~> 3.1"},
+      {:goth, "~> 1.0"},
       {:httpoison, "~> 1.0"},
+      {:jason, "~> 1.1"},
       {:bypass, "~> 0.1", only: :test},
       {:mix_test_watch, "~> 0.4", only: :dev},
-      {:ex_doc, "~> 0.16", only: [:dev]},
-      {:earmark, "~> 1.2", only: [:dev]},
+      {:ex_doc, "~> 0.19", only: :dev},
       {:uuid, "~> 1.1", only: :test}
     ]
   end
