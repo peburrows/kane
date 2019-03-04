@@ -4,7 +4,7 @@ defmodule Kane.Mixfile do
   def project do
     [
       app: :kane,
-      version: "0.6.0",
+      version: "0.7.0-beta",
       elixir: "~> 1.4",
       package: package(),
       description: description(),
@@ -14,7 +14,6 @@ defmodule Kane.Mixfile do
 
   def application do
     []
-    # [applications: [:logger, :goth]]
   end
 
   defp deps do
