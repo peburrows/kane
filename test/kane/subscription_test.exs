@@ -205,6 +205,11 @@ defmodule Kane.SubscriptionTest do
     refute_received :subscription_pull
   end
 
+  test "no acknowledgement when no messages given" do
+    # This implicitly tests that ByPass does not receive any request
+    assert :ok == Subscription.ack(%Subscription{name: "ack-my-sub"}, [])
+  end
+
   test "acknowledging a message", %{bypass: bypass} do
     Bypass.expect(bypass, fn conn ->
       assert conn.method == "POST"

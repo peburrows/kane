@@ -82,6 +82,8 @@ defmodule Kane.Subscription do
     )
   end
 
+  def ack(%__MODULE__{}, []), do: :ok
+
   def ack(%__MODULE__{} = sub, messages) when is_list(messages) do
     data = %{"ackIds" => Enum.map(messages, fn m -> m.ack_id end)}
 
