@@ -41,7 +41,7 @@ defmodule Kane.Topic do
   """
   @spec all :: {:ok, [t]} | Error.t()
   def all do
-    case Client.get(path) do
+    case Client.get(path()) do
       {:ok, body, _code} ->
         {:ok, %{"topics" => topics}} = Jason.decode(body)
 
@@ -80,7 +80,7 @@ defmodule Kane.Topic do
       "my-topic"
   """
   @spec strip!(String.t()) :: String.t()
-  def strip!(name), do: String.replace(name, ~r(^#{path}/?), "")
+  def strip!(name), do: String.replace(name, ~r(^#{path()}/?), "")
 
   @doc """
   Adds the project and topic prefix (if necessary) to create a fully-qualified topic name
