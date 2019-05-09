@@ -13,21 +13,24 @@ defmodule Kane.Message do
   defstruct id: nil, attributes: %{}, data: nil, ack_id: nil, publish_time: nil
 
   @spec publish(binary, binary) :: {:ok, t} | Error.t()
-  def publish(message, topic) when is_binary(message) and is_binary(topic) do
-    publish(%__MODULE__{data: message}, %Topic{name: topic})
+  @spec publish(binary, binary, Keyword.t()) :: {:ok, t} | Error.t()
+  def publish(message, topic, options \\ []) when is_binary(message) and is_binary(topic) do
+    publish(%__MODULE__{data: message}, %Topic{name: topic}, options)
   end
 
   @spec publish(t, Topic.t()) :: {:ok, t} | Error.t()
-  def publish(%__MODULE__{} = message, %Topic{} = topic) do
-    case publish([message], topic) do
+  @spec publish(t, Topic.t(), Keyword.t()) :: {:ok, t} | Error.t()
+  def publish(%__MODULE__{} = message, %Topic{} = topic, options) do
+    case publish([message], topic, options) do
       {:ok, [message | _]} -> {:ok, message}
       err -> err
     end
   end
 
   @spec publish([t], Topic.t()) :: {:ok, [t]} | Error.t()
-  def publish(messages, %Topic{name: topic}) when is_list(messages) do
-    case Kane.Client.post(path(topic), data(messages)) do
+  @spec publish([t], Topic.t(), Keyword.t()) :: {:ok, [t]} | Error.t()
+  def publish(messages, %Topic{name: topic}, options) when is_list(messages) do
+    case Kane.Client.post(path(topic), data(messages), options) do
       {:ok, body, _code} ->
         collected =
           body

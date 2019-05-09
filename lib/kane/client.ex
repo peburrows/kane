@@ -15,17 +15,27 @@ defmodule Kane.Client do
   def delete(path, options \\ []), do: call(:delete, path, options)
 
   defp call(method, path, options) do
-    headers = [auth_header()]
+    {service_account_email, httppoison_options} = split_options(options)
 
-    apply(HTTPoison, method, [url(path), headers, options])
+    headers = [auth_header(service_account_email)]
+
+    apply(HTTPoison, method, [url(path), headers, httppoison_options])
     |> handle_response
   end
 
   defp call(method, path, data, options) do
-    headers = [auth_header(), {"content-type", "application/json"}]
+    {service_account_email, httppoison_options} = split_options(options)
 
-    apply(HTTPoison, method, [url(path), encode!(data), headers, options])
+    headers = [auth_header(service_account_email), {"content-type", "application/json"}]
+
+    apply(HTTPoison, method, [url(path), encode!(data), headers, httppoison_options])
     |> handle_response
+  end
+
+  defp split_options(options) do
+    service_account_email = options |> Keyword.get(:service_account_email)
+    httppoison_options = options |> Keyword.delete(:service_account_email)
+    {service_account_email, httppoison_options}
   end
 
   defp url(path), do: Path.join([endpoint(), path])
@@ -33,8 +43,16 @@ defmodule Kane.Client do
   defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
   defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
 
-  defp auth_header do
-    {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
+  defp auth_header(service_account_email \\ nil) do
+    {:ok, token} =
+      case service_account_email do
+        nil ->
+          token_mod().for_scope(Kane.oauth_scope())
+
+        _ ->
+          token_mod().for_scope({service_account_email, Kane.oauth_scope()})
+      end
+
     {"Authorization", "#{token.type} #{token.token}"}
   end
 

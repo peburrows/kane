@@ -82,18 +82,18 @@ defmodule Kane.Subscription do
     )
   end
 
-  def ack(%__MODULE__{}, []), do: :ok
+  def ack(%__MODULE__{}, [], options \\ []), do: :ok
 
-  def ack(%__MODULE__{} = sub, messages) when is_list(messages) do
+  def ack(%__MODULE__{} = sub, messages, options) when is_list(messages) do
     data = %{"ackIds" => Enum.map(messages, fn m -> m.ack_id end)}
 
-    case Kane.Client.post(path(sub, :ack), data) do
+    case Kane.Client.post(path(sub, :ack), data, options) do
       {:ok, _body, _code} -> :ok
       err -> err
     end
   end
 
-  def ack(%__MODULE__{} = sub, %Message{} = mess), do: ack(sub, [mess])
+  def ack(%__MODULE__{} = sub, %Message{} = mess, options), do: ack(sub, [mess], options)
 
   def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic}, :create) do
     %{"topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack}
@@ -145,8 +145,8 @@ defmodule Kane.Subscription do
 
   defp http_options(options) do
     case Keyword.get(options, :return_immediately, true) do
-      false -> [recv_timeout: :infinity]
-      _ -> []
+      false -> [recv_timeout: :infinity] ++ Keyword.delete(options, :return_immediately)
+      _ -> options
     end
   end
 end
