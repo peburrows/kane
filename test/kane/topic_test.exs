@@ -5,7 +5,7 @@ defmodule Kane.TopicTest do
   setup do
     bypass = Bypass.open()
     Application.put_env(:kane, :endpoint, "http://localhost:#{bypass.port}")
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     {:ok, bypass: bypass, project: project}
   end
 
@@ -54,7 +54,7 @@ defmodule Kane.TopicTest do
   end
 
   test "finding a topic with a fully-qualified name", %{bypass: bypass} do
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     short_name = "fqn"
     full_name = "projects/#{project}/topics/#{short_name}"
 
@@ -77,7 +77,7 @@ defmodule Kane.TopicTest do
 
   test "listing all topics", %{bypass: bypass} do
     Bypass.expect(bypass, fn conn ->
-      {:ok, project} = Goth.Config.get(:project_id)
+      {:ok, %{project_id: project}} = Gotham.get_profile()
       assert Regex.match?(~r/\/projects\/#{project}\/topics/, conn.request_path)
 
       Plug.Conn.resp(conn, 200, ~s({"topics": [

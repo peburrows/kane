@@ -7,7 +7,7 @@ defmodule Kane.SubscriptionTest do
   setup do
     bypass = Bypass.open()
     Application.put_env(:kane, :endpoint, "http://localhost:#{bypass.port}")
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     {:ok, bypass: bypass, project: project}
   end
 
@@ -153,7 +153,8 @@ defmodule Kane.SubscriptionTest do
     end)
 
     assert {:ok, []} =
-             Subscription.pull(%Subscription{name: "capped", topic: "sure"},
+             Subscription.pull(
+               %Subscription{name: "capped", topic: "sure"},
                max_messages: 5,
                return_immediately: false
              )

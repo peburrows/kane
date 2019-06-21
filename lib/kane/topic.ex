@@ -95,7 +95,7 @@ defmodule Kane.Topic do
   defp with_name(name), do: %__MODULE__{name: strip!(name)}
 
   defp project do
-    {:ok, id} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: id}} = Gotham.get_profile()
     id
   end
 

@@ -104,7 +104,7 @@ defmodule Kane.Message do
   defp path(%Topic{name: topic}), do: path(topic)
 
   defp path(topic) do
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     "projects/#{project}/topics/#{Topic.strip!(topic)}:publish"
   end
 end

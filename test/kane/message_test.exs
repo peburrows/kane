@@ -39,7 +39,7 @@ defmodule Kane.MessageTest do
   end
 
   test "publishing a message", %{bypass: bypass} do
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     topic = "publish"
 
     Bypass.expect(bypass, fn conn ->
@@ -53,7 +53,7 @@ defmodule Kane.MessageTest do
   end
 
   test "publishing multiple messages", %{bypass: bypass} do
-    {:ok, project} = Goth.Config.get(:project_id)
+    {:ok, %{project_id: project}} = Gotham.get_profile()
     topic = "publish-multi"
     ids = ["hello", "hi", "howdy"]
 
@@ -63,7 +63,7 @@ defmodule Kane.MessageTest do
       Plug.Conn.resp(
         conn,
         201,
-        ~s({"messageIds": [ "#{Enum.at(ids, 0)}", "#{Enum.at(ids, 1)}", "#{Enum.at(ids, 2)}" ]})
+        ~s({"messageIds": [ "#{Enum.at(ids, 0)}", "#{Enum.at(ids, 1)}", "#{Enum.at(ids, 2)}"]})
       )
     end)
 

@@ -1,6 +1,9 @@
 use Mix.Config
 
-config :goth,
-  json: "config/test-credentials.json" |> Path.expand |> File.read!
+config :gotham,
+  default_account: :test,
+  accounts: [
+    {:test, file_path: "config/test-credentials.json"}
+  ]
 
 config :kane, :token, Kane.TestToken

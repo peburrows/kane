@@ -31,12 +31,17 @@ defmodule Kane.Client do
   defp url(path), do: Path.join([endpoint(), path])
 
   defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
-  defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
+  defp token_mod, do: Application.get_env(:kane, :token, Gotham)
 
   defp auth_header do
     {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
-    {"Authorization", "#{token.type} #{token.token}"}
+    auth_header(token)
   end
+
+  defp auth_header(%Gotham.Token{token_type: type, access_token: token}),
+    do: {"Authorization", "#{type} #{token}"}
+
+  defp auth_header(token), do: {"Authorization", "#{token.type} #{token.token}"}
 
   defp handle_response({:ok, response}), do: handle_status(response)
   defp handle_response(err), do: err

@@ -5,7 +5,7 @@ defmodule Kane.Mixfile do
     [
       app: :kane,
       version: "0.7.0",
-      elixir: "~> 1.4",
+      elixir: "~> 1.6",
       package: package(),
       description: description(),
       deps: deps()
@@ -18,7 +18,7 @@ defmodule Kane.Mixfile do
 
   defp deps do
     [
-      {:goth, "~> 1.0"},
+      {:gotham, "~> 0.1.1"},
       {:httpoison, "~> 1.0"},
       {:jason, "~> 1.1"},
       {:bypass, "~> 0.1", only: :test},
