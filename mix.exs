@@ -24,7 +24,7 @@ defmodule Kane.Mixfile do
       {:bypass, "~> 0.1", only: :test},
       {:mix_test_watch, "~> 0.4", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev},
-      {:uuid, "~> 1.1", only: :test}
+      {:uuid, "~> 1.1"}
     ]
   end
 

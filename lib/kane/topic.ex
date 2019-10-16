@@ -99,6 +99,6 @@ defmodule Kane.Topic do
     id
   end
 
-  defp path, do: "projects/#{project()}/topics"
+  defp path, do: "#{Kane.project_path()}/topics"
   defp path(topic), do: "#{path()}/#{strip!(topic)}"
 end

@@ -104,7 +104,6 @@ defmodule Kane.Message do
   defp path(%Topic{name: topic}), do: path(topic)
 
   defp path(topic) do
-    {:ok, project} = Goth.Config.get(:project_id)
-    "projects/#{project}/topics/#{Topic.strip!(topic)}:publish"
+    "#{Kane.project_path()}/topics/#{Topic.strip!(topic)}:publish"
   end
 end

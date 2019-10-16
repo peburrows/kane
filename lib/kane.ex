@@ -14,4 +14,18 @@ defmodule Kane do
       "https://www.googleapis.com/auth/pubsub"
   """
   def oauth_scope, do: "https://www.googleapis.com/auth/pubsub"
+
+  defp project do
+    case Goth.Config.get(:project_id) do
+      {:ok, project} ->
+        project
+
+      _ ->
+        "development"
+    end
+  end
+
+  def project_path do
+    "projects/#{project()}"
+  end
 end

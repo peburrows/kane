@@ -1,6 +1,19 @@
+defmodule Kane.TestToken do
+  def for_scope(scope) do
+    {:ok,
+     %Goth.Token{
+       scope: scope,
+       expires: :os.system_time(:seconds) + 3600,
+       type: "Bearer",
+       token: UUID.uuid1()
+     }}
+  end
+end
+
 defmodule Kane.Client do
   alias Response.Success
   alias Response.Error
+  require Logger
 
   @spec get(binary, keyword) :: Success.t() | Error.t()
   def get(path, options \\ []), do: call(:get, path, options)
@@ -31,10 +44,19 @@ defmodule Kane.Client do
   defp url(path), do: Path.join([endpoint(), path])
 
   defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
-  defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
+
+  defp token_mod() do
+    local = Application.get_env(:kane, :local, false)
+
+    if local do
+      Kane.TestToken.for_scope(:development)
+    else
+      {:ok, Application.get_env(:kane, :token, Goth.Token).for_scope(Kane.oauth_scope())}
+    end
+  end
 
   defp auth_header do
-    {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
+    {:ok, token} = token_mod()
     {"Authorization", "#{token.type} #{token.token}"}
   end
 
