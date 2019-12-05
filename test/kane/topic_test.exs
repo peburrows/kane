@@ -12,6 +12,11 @@ defmodule Kane.TopicTest do
   test "getting full name", %{project: project} do
     name = "my-topic"
     assert "projects/#{project}/topics/#{name}" == %Topic{name: name} |> Topic.full_name()
+
+    assert "projects/whatever/topics/full" ==
+             %Topic{name: {"whatever", "full"}} |> Topic.full_name()
+
+    assert "projects/whatever/topics/mine" == Topic.full_name("projects/whatever/topics/mine")
   end
 
   test "successfully creating a topic", %{bypass: bypass} do

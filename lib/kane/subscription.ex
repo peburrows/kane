@@ -111,8 +111,19 @@ defmodule Kane.Subscription do
     project
   end
 
-  defp find_path, do: "projects/#{project()}/subscriptions"
-  defp find_path(subscription), do: "#{find_path()}/#{strip!(subscription)}"
+  # defp find_path, do: "projects/#{project()}/subscriptions"
+
+  defp find_path({project, sub}), do: "projects/#{project}/subscriptions/#{sub}"
+
+  defp find_path(subscription) do
+    subscription
+    |> String.contains?("/")
+    |> if do
+      subscription
+    else
+      find_path({project(), subscription})
+    end
+  end
 
   def path(%__MODULE__{name: name}, kind), do: path(name, kind)
 
@@ -126,12 +137,24 @@ defmodule Kane.Subscription do
 
   def full_name(%__MODULE__{name: name}), do: full_name(name)
 
+  def full_name({project, name}), do: "projects/#{project}/subscriptions/#{name}"
+
   def full_name(name) do
-    {:ok, project} = Goth.Config.get(:project_id)
-    "projects/#{project}/subscriptions/#{name}"
+    name
+    |> String.contains?("/")
+    |> if do
+      name
+    else
+      {:ok, project} = Goth.Config.get(:project_id)
+      full_name({project, name})
+    end
   end
 
-  def strip!(name), do: String.replace(name, ~r(^#{find_path()}/?), "")
+  def strip!(name) do
+    name
+    |> String.split("/", trim: true)
+    |> List.last()
+  end
 
   defp from_json(json) do
     data = Jason.decode!(json)
