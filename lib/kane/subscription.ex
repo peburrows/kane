@@ -95,6 +95,22 @@ defmodule Kane.Subscription do
 
   def ack(%__MODULE__{} = sub, %Message{} = mess), do: ack(sub, [mess])
 
+  def extend(%__MODULE__{}, [], _), do: :ok
+
+  def extend(%__MODULE__{} = sub, %Message{} = msg, extension), do: extend(sub, [msg], extension)
+
+  def extend(%__MODULE__{} = sub, messages, extension) when is_list(messages) and is_integer(extension) do
+    data = %{
+      "ackIds" => Enum.map(messages, &(&1.ack_id)),
+      "ackDeadlineSeconds" => extension
+    }
+
+    case Kane.Client.post(path(sub, :extend), data) do
+      {:ok, _body, _code} -> :ok
+      err -> err
+    end
+  end
+
   def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic}, :create) do
     %{"topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack}
   end
@@ -120,6 +136,7 @@ defmodule Kane.Subscription do
     case kind do
       :pull -> full_name(name) <> ":pull"
       :ack -> full_name(name) <> ":acknowledge"
+      :extend -> full_name(name) <> ":modifyAckDeadline"
       _ -> full_name(name)
     end
   end

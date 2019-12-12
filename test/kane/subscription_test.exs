@@ -230,6 +230,32 @@ defmodule Kane.SubscriptionTest do
     assert :ok == Subscription.ack(%Subscription{name: "ack-my-sub"}, messages)
   end
 
+  test "no-op when no messages are given to extend" do
+    # This implicitly tests that ByPass does not receive any request
+    assert :ok == Subscription.extend(%Subscription{name: "extend-ack-deadlines"}, [], 600)
+  end
+
+  test "extending a message ack deadline", %{bypass: bypass} do
+    Bypass.expect(bypass, fn conn ->
+      assert conn.method == "POST"
+      assert_content_type(conn, "application/json")
+
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      body = body |> Jason.decode!()
+      assert ["123", "321"] = body["ackIds"]
+      assert 600 = body["ackDeadlineSeconds"]
+
+      Plug.Conn.send_resp(conn, 200, "{}\n")
+    end)
+
+    messages = [
+      %Message{ack_id: "123"},
+      %Message{ack_id: "321"}
+    ]
+
+    assert :ok == Subscription.extend(%Subscription{name: "extend-ack-deadlines"}, messages, 600)
+  end
+
   defp assert_content_type(conn, type) do
     {"content-type", content_type} =
       Enum.find(conn.req_headers, fn {prop, _} ->
