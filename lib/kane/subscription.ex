@@ -163,7 +163,7 @@ defmodule Kane.Subscription do
   defp http_options(options) do
     case Keyword.get(options, :return_immediately, true) do
       false -> [recv_timeout: :infinity]
-      _ -> []
+      _ -> [recv_timeout: 60_000]
     end
   end
 end
