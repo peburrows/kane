@@ -15,14 +15,16 @@ defmodule Kane.Client do
   def delete(path, options \\ []), do: call(:delete, path, options)
 
   defp call(method, path, options) do
-    headers = [auth_header()]
+    {goth_opts, options} = split_opts(options)
+    headers = [auth_header(goth_opts)]
 
     apply(HTTPoison, method, [url(path), headers, options])
     |> handle_response
   end
 
   defp call(method, path, data, options) do
-    headers = [auth_header(), {"content-type", "application/json"}]
+    {goth_opts, options} = split_opts(options)
+    headers = [auth_header(goth_opts), {"content-type", "application/json"}]
 
     apply(HTTPoison, method, [url(path), encode!(data), headers, options])
     |> handle_response
@@ -33,8 +35,19 @@ defmodule Kane.Client do
   defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
   defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
 
-  defp auth_header do
-    {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
+  defp split_opts(options), do: Keyword.split(options, [:account, :sub])
+
+  defp auth_header(opts) do
+    {:ok, token} =
+      opts
+      |> Keyword.get(:account)
+      |> case do
+        nil -> token_mod().for_scope(Kane.oauth_scope(), Keyword.get(opts, :sub))
+        acct -> token_mod().for_scope({acct, Kane.oauth_scope()}, Keyword.get(opts, :sub))
+      end
+
+    # we need to call this differently depending on
+    # {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
     {"Authorization", "#{token.type} #{token.token}"}
   end
 

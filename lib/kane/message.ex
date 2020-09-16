@@ -12,22 +12,24 @@ defmodule Kane.Message do
 
   defstruct id: nil, attributes: %{}, data: nil, ack_id: nil, publish_time: nil
 
+  def publish(message, topic, opts \\ [])
+
   @spec publish(binary, binary) :: {:ok, t} | Error.t()
-  def publish(message, topic) when is_binary(message) and is_binary(topic) do
-    publish(%__MODULE__{data: message}, %Topic{name: topic})
+  def publish(message, topic, opts) when is_binary(message) and is_binary(topic) do
+    publish(%__MODULE__{data: message}, %Topic{name: topic}, opts)
   end
 
   @spec publish(t, Topic.t()) :: {:ok, t} | Error.t()
-  def publish(%__MODULE__{} = message, %Topic{} = topic) do
-    case publish([message], topic) do
+  def publish(%__MODULE__{} = message, %Topic{} = topic, opts) do
+    case publish([message], topic, opts) do
       {:ok, [message | _]} -> {:ok, message}
       err -> err
     end
   end
 
   @spec publish([t], Topic.t()) :: {:ok, [t]} | Error.t()
-  def publish(messages, %Topic{name: topic}) when is_list(messages) do
-    case Kane.Client.post(path(topic), data(messages)) do
+  def publish(messages, %Topic{name: topic}, opts) when is_list(messages) do
+    case Kane.Client.post(path(topic), data(messages), opts) do
       {:ok, body, _code} ->
         collected =
           body
@@ -102,9 +104,16 @@ defmodule Kane.Message do
   end
 
   defp path(%Topic{name: topic}), do: path(topic)
+  defp path({project, topic}), do: "projects/#{project}/topics/#{Topic.strip!(topic)}:publish"
 
   defp path(topic) do
-    {:ok, project} = Goth.Config.get(:project_id)
-    "projects/#{project}/topics/#{Topic.strip!(topic)}:publish"
+    topic
+    |> String.match?(~r{/})
+    |> if do
+      topic
+    else
+      {:ok, project} = Goth.Config.get(:project_id)
+      path({project, topic})
+    end
   end
 end

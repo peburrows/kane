@@ -18,11 +18,13 @@ defmodule Kane.Topic do
   alias Kane.Client.Response.Error
 
   @type t :: %__MODULE__{name: binary}
-  defstruct [:name]
+  defstruct [:name, :project]
 
   @doc """
   Find a topic by name. The name can be either a short name (`my-topic`)
-  or the fully-qualified name (`projects/my-project/topics/my-topic`)
+  or the fully-qualified name (`projects/my-project/topics/my-topic`).
+  If the short name is passed in, Kane will use `Goth` to get the default
+  project from you application's config (via `Goth.Config.get(:project_id)`).
   """
   @spec find(String.t()) :: {:ok, t} | Error.t()
   def find(name) do
@@ -80,7 +82,12 @@ defmodule Kane.Topic do
       "my-topic"
   """
   @spec strip!(String.t()) :: String.t()
-  def strip!(name), do: String.replace(name, ~r(^#{path()}/?), "")
+
+  def strip!(name) do
+    name
+    |> String.split("/", trim: true)
+    |> List.last()
+  end
 
   @doc """
   Adds the project and topic prefix (if necessary) to create a fully-qualified topic name
@@ -94,11 +101,23 @@ defmodule Kane.Topic do
 
   defp with_name(name), do: %__MODULE__{name: strip!(name)}
 
+  # this should be specific to a topic, and, in fact,
+  # maybe we should require it to be included on the Topic itself
   defp project do
     {:ok, id} = Goth.Config.get(:project_id)
     id
   end
 
   defp path, do: "projects/#{project()}/topics"
-  defp path(topic), do: "#{path()}/#{strip!(topic)}"
+  defp path({proj, topic}), do: "projects/#{proj}/topics/#{strip!(topic)}"
+
+  defp path(topic) do
+    topic
+    |> String.contains?("/")
+    |> if do
+      topic
+    else
+      path({project(), topic})
+    end
+  end
 end
