@@ -4,7 +4,7 @@ defmodule Kane.Message do
 
   @type t :: %__MODULE__{
           id: String.t() | nil,
-          attributes: Map.t(),
+          attributes: %{String.t() => String.t()},
           data: any,
           ack_id: String.t() | nil,
           publish_time: String.t() | nil
