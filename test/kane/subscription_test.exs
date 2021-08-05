@@ -21,11 +21,17 @@ defmodule Kane.SubscriptionTest do
   test "creating the JSON for creating a subscription", %{project: project} do
     name = "sub-json"
     topic = "sub-json-topic"
-    sub = %Subscription{name: name, topic: %Topic{name: topic}}
+
+    sub = %Subscription{
+      name: name,
+      topic: %Topic{name: topic},
+      filter: "attributes:domain"
+    }
 
     assert %{
              "topic" => "projects/#{project}/topics/#{topic}",
-             "ackDeadlineSeconds" => 10
+             "ackDeadlineSeconds" => 10,
+             "filter" => "attributes:domain"
            } == Subscription.data(sub, :create)
   end
 
@@ -57,10 +63,10 @@ defmodule Kane.SubscriptionTest do
     topic = "topic-to-sub"
     sub = %Subscription{name: name, topic: %Topic{name: topic}}
 
-    Bypass.expect(bypass, fn conn ->
-      sname = Subscription.full_name(sub)
-      tname = Topic.full_name(sub.topic)
+    sname = Subscription.full_name(sub)
+    tname = Topic.full_name(sub.topic)
 
+    Bypass.expect(bypass, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
       assert body ==
@@ -76,8 +82,51 @@ defmodule Kane.SubscriptionTest do
                                         }))
     end)
 
-    assert {:ok, %Subscription{topic: %Topic{name: ^topic}, name: ^name, ack_deadline: 10}} =
+    assert {:ok, %Subscription{topic: %Topic{name: ^tname}, name: ^sname, ack_deadline: 10}} =
              Subscription.create(sub)
+  end
+
+  test "creating a subscription with filter includes a filter in the request body", %{
+    bypass: bypass
+  } do
+    name = "create-sub"
+    topic = "topic-to-sub"
+    filter = "attributes:domain"
+
+    sub = %Subscription{name: name, topic: %Topic{name: topic}, filter: filter}
+
+    sname = Subscription.full_name(sub)
+    tname = Topic.full_name(sub.topic)
+
+    Bypass.expect(bypass, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert body ==
+               %{
+                 "topic" => tname,
+                 "ackDeadlineSeconds" => sub.ack_deadline,
+                 "filter" => filter
+               }
+               |> Jason.encode!()
+
+      assert conn.method == "PUT"
+      assert_content_type(conn, "application/json")
+
+      Plug.Conn.send_resp(conn, 201, ~s({
+                                           "name": "#{sname}",
+                                           "topic": "#{tname}",
+                                           "ackDeadlineSeconds": 10,
+                                           "filter": "#{filter}"
+                                        }))
+    end)
+
+    assert {:ok,
+            %Subscription{
+              topic: %Topic{name: ^tname},
+              name: ^sname,
+              ack_deadline: 10,
+              filter: ^filter
+            }} = Subscription.create(sub)
   end
 
   test "deleting a subscription", %{bypass: bypass, project: project} do
