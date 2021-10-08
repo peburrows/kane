@@ -82,7 +82,7 @@ defmodule Kane.SubscriptionTest do
                                         }))
     end)
 
-    assert {:ok, %Subscription{topic: %Topic{name: ^tname}, name: ^sname, ack_deadline: 10}} =
+    assert {:ok, %Subscription{topic: %Topic{name: ^topic}, name: ^name, ack_deadline: 10}} =
              Subscription.create(sub)
   end
 
@@ -122,8 +122,8 @@ defmodule Kane.SubscriptionTest do
 
     assert {:ok,
             %Subscription{
-              topic: %Topic{name: ^tname},
-              name: ^sname,
+              topic: %Topic{name: ^topic},
+              name: ^name,
               ack_deadline: 10,
               filter: ^filter
             }} = Subscription.create(sub)
