@@ -21,7 +21,7 @@ defmodule Kane.Mixfile do
       {:goth, "~> 1.0"},
       {:httpoison, "~> 1.0"},
       {:jason, "~> 1.1"},
-      {:bypass, "~> 0.1", only: :test},
+      {:bypass, "~> 2.0", only: :test},
       {:mix_test_watch, "~> 0.4", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev},
       {:uuid, "~> 1.1", only: :test}
