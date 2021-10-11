@@ -129,6 +129,60 @@ defmodule Kane.SubscriptionTest do
             }} = Subscription.create(sub)
   end
 
+  test "includes expiration keys when creating a subscription", %{
+    bypass: bypass
+  } do
+    name = "create-sub"
+    topic = "topic-to-sub"
+    expires_in = 24 |> :timer.hours() |> to_seconds()
+    message_retention = 10 |> :timer.minutes() |> to_seconds()
+
+    sub = %Subscription{
+      name: name,
+      topic: %Topic{name: topic},
+      expires_in: expires_in,
+      message_retention_duration: message_retention
+    }
+
+    sname = Subscription.full_name(sub)
+    tname = Topic.full_name(sub.topic)
+
+    Bypass.expect(bypass, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert body ==
+               %{
+                 "topic" => tname,
+                 "ackDeadlineSeconds" => sub.ack_deadline,
+                 "messageRetentionDuration" => "#{message_retention}s",
+                 "expirationPolicy" => %{
+                   "ttl" => "#{expires_in}s"
+                 }
+               }
+               |> Jason.encode!()
+
+      assert conn.method == "PUT"
+      assert_content_type(conn, "application/json")
+
+      Plug.Conn.send_resp(conn, 201, ~s({
+                                           "name": "#{sname}",
+                                           "topic": "#{tname}",
+                                           "ackDeadlineSeconds": 10,
+                                           "messageRetentionDuration": "#{message_retention}s",
+                                           "expirationPolicy": {"ttl": "#{expires_in}s"}
+                                        }))
+    end)
+
+    assert {:ok,
+            %Subscription{
+              topic: %Topic{name: ^topic},
+              name: ^name,
+              ack_deadline: 10,
+              expires_in: ^expires_in,
+              message_retention_duration: ^message_retention
+            }} = Subscription.create(sub)
+  end
+
   test "deleting a subscription", %{bypass: bypass, project: project} do
     name = "delete-me"
 
@@ -313,4 +367,6 @@ defmodule Kane.SubscriptionTest do
 
     assert String.contains?(content_type, type)
   end
+
+  defp to_seconds(milliseconds), do: div(milliseconds, 1000)
 end
