@@ -1,5 +1,5 @@
 defmodule Kane.Subscription do
-  defstruct name: nil, topic: nil, ack_deadline: 10
+  defstruct name: nil, topic: nil, ack_deadline: 10, filter: nil
   alias Kane.Topic
   alias Kane.Message
   alias Kane.Client
@@ -8,7 +8,7 @@ defmodule Kane.Subscription do
 
   def create(%__MODULE__{} = sub) do
     case Kane.Client.put(path(sub, :create), data(sub, :create)) do
-      {:ok, _body, _code} -> {:ok, sub}
+      {:ok, body, _code} -> {:ok, from_json(body)}
       {:error, _body, 409} -> {:error, :already_exists}
       err -> err
     end
@@ -99,9 +99,10 @@ defmodule Kane.Subscription do
 
   def extend(%__MODULE__{} = sub, %Message{} = msg, extension), do: extend(sub, [msg], extension)
 
-  def extend(%__MODULE__{} = sub, messages, extension) when is_list(messages) and is_integer(extension) do
+  def extend(%__MODULE__{} = sub, messages, extension)
+      when is_list(messages) and is_integer(extension) do
     data = %{
-      "ackIds" => Enum.map(messages, &(&1.ack_id)),
+      "ackIds" => Enum.map(messages, & &1.ack_id),
       "ackDeadlineSeconds" => extension
     }
 
@@ -111,8 +112,19 @@ defmodule Kane.Subscription do
     end
   end
 
-  def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic}, :create) do
-    %{"topic" => Topic.full_name(topic), "ackDeadlineSeconds" => ack}
+  def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic, filter: nil}, :create) do
+    %{
+      "topic" => Topic.full_name(topic),
+      "ackDeadlineSeconds" => ack
+    }
+  end
+
+  def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic, filter: filter}, :create) do
+    %{
+      "topic" => Topic.full_name(topic),
+      "ackDeadlineSeconds" => ack,
+      "filter" => filter
+    }
   end
 
   def data(%__MODULE__{}, :pull, options) do
@@ -153,10 +165,22 @@ defmodule Kane.Subscription do
   defp from_json(json) do
     data = Jason.decode!(json)
 
+    subscription_name = Map.get(data, "name")
+    topic_name = Map.get(data, "topic")
+
+    # When clients are working with subscriptions, the topic and subscription names aren't
+    # fully qualified (ie. they aren't prefixed with the project, topic, etc.) However,
+    # we do fully qualify subscription and topic names when creating subscriptions, and
+    # the server is going to respond with a fully qualified name.
+    #
+    # To preserve the behavior where the Subscription always includes just the shortened
+    # name, we strip away the prefix for the topic and subscription names at the time we
+    # deserialize the response.
     %__MODULE__{
-      name: Map.get(data, "name"),
+      name: strip!(subscription_name),
       ack_deadline: Map.get(data, "ackDeadlineSeconds"),
-      topic: %Topic{name: Map.get(data, "topic")}
+      topic: %Topic{name: Topic.strip!(topic_name)},
+      filter: Map.get(data, "filter")
     }
   end
 
