@@ -36,22 +36,23 @@ defmodule Kane.Topic do
   end
 
   @doc """
-  Retrieve all the topics from the API. **NOTE:** `Subscription.all/0` doesn't currently support pagination,
-  so if you have more than 100 topics, you won't be able to retrieve all of them.
+  Retrieve all the topics from the API.
   """
   @spec all :: {:ok, [t]} | Error.t()
   def all do
-    case Client.get(path()) do
-      {:ok, body, _code} ->
-        {:ok, %{"topics" => topics}} = Jason.decode(body)
+    next_page(:first_page)
+  end
 
-        {:ok,
-         Enum.map(topics, fn t ->
-           with_name(t["name"])
-         end)}
+  defp next_page(:end) do
+    {:ok, []}
+  end
 
-      err ->
-        err
+  defp next_page(page_token) do
+    with {:ok, body, _code} <- Client.get(list_path(page_token)),
+         {:ok, %{"topics" => topics} = decoded_body} <- Jason.decode(body),
+         next_page_token = Map.get(decoded_body, "nextPageToken", :end),
+         {:ok, next_topics} <- next_page(next_page_token) do
+      {:ok, Enum.map(topics, fn t -> with_name(t["name"]) end) ++ next_topics}
     end
   end
 
@@ -101,4 +102,7 @@ defmodule Kane.Topic do
 
   defp path, do: "projects/#{project()}/topics"
   defp path(topic), do: "#{path()}/#{strip!(topic)}"
+
+  defp list_path(:first_page), do: path()
+  defp list_path(page_token), do: "#{path()}?pageToken=#{page_token}"
 end
