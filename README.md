@@ -16,26 +16,20 @@ def deps do
 end
 ```
 
-2. Configure [Goth](https://github.com/peburrows/goth) (Kane's underlying token storage and retrieval library) with your Google JSON credentials:
-
-```elixir
-config :goth,
-  json: "path/to/google/json/creds.json" |> File.read!
-```
-
-3. Ensure Kane is started before your application:
-
-```elixir
-def application do
-  [applications: [:kane]]
-end
-```
+2. Configure [Goth](https://github.com/peburrows/goth) (Kane's underlying token storage and retrieval library) with your Google JSON credentials.
 
 ## Usage
 
 Pull, process and acknowledge messages via a pre-existing subscription:
 
 ```elixir
+{:ok, token} = Goth.fetch(MyApp.Goth)
+
+kane = %Kane{
+  project_id: my_app_gcp_credentials["project_id"],
+  token: token
+}
+
 subscription = %Kane.Subscription{
                   name: "my-sub",
                   topic: %Kane.Topic{
@@ -43,14 +37,14 @@ subscription = %Kane.Subscription{
                   }
                 }
 
-{:ok, messages} = Kane.Subscription.pull(subscription)
+{:ok, messages} = Kane.Subscription.pull(kane, subscription)
 
 Enum.each messages, fn(mess)->
   process_message(mess)
 end
 
 # acknowledge message receipt in bulk
-Kane.Subscription.ack(subscription, messages)
+Kane.Subscription.ack(kane, subscription, messages)
 ```
 
 Send message via pre-existing subscription:
@@ -59,7 +53,7 @@ Send message via pre-existing subscription:
 topic   = %Kane.Topic{name: "my-topic"}
 message = %Kane.Message{data: %{"hello": "world"}, attributes: %{"random" => "attr"}}
 
-result  = Kane.Message.publish(message, topic)
+result  = Kane.Message.publish(kane, message, topic)
 
 case result do
   {:ok, _return}    -> IO.puts("It worked!")
