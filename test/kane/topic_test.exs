@@ -1,100 +1,126 @@
 defmodule Kane.TopicTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
+
   alias Kane.Topic
+  alias Kane.GCPTestCredentials
+  alias Kane.TestToken
 
   setup do
     bypass = Bypass.open()
-    Application.put_env(:kane, :endpoint, "http://localhost:#{bypass.port}")
-    {:ok, project} = Goth.Config.get(:project_id)
-    {:ok, bypass: bypass, project: project}
+    credentials = GCPTestCredentials.read!()
+    {:ok, token} = TestToken.for_scope(Kane.oauth_scope())
+
+    kane = %Kane{
+      endpoint: "http://localhost:#{bypass.port}",
+      token: token,
+      project_id: Map.fetch!(credentials, "project_id")
+    }
+
+    {:ok, bypass: bypass, kane: kane}
   end
 
-  test "getting full name", %{project: project} do
-    name = "my-topic"
-    assert "projects/#{project}/topics/#{name}" == %Topic{name: name} |> Topic.full_name()
+  describe "full_name/2" do
+    test "getting full name", %{kane: kane} do
+      name = "my-topic"
+      topic = %Topic{name: name}
+      project_id = kane.project_id
+
+      assert "projects/#{project_id}/topics/#{name}" == Topic.full_name(topic, project_id)
+    end
   end
 
-  test "successfully creating a topic", %{bypass: bypass} do
-    Bypass.expect(bypass, fn conn ->
-      assert_access_token(conn)
-      assert_body(conn, "")
-      Plug.Conn.resp(conn, 201, ~s({"name": "projects/myproject/topics/mytopic"}))
-    end)
+  describe "create/2" do
+    test "successfully creating a topic", %{kane: kane, bypass: bypass} do
+      Bypass.expect(bypass, fn conn ->
+        assert_access_token(conn)
+        assert_body(conn, "")
+        Plug.Conn.resp(conn, 201, ~s({"name": "projects/myproject/topics/mytopic"}))
+      end)
 
-    assert {:ok, %Topic{name: "test"}} = Topic.create("test")
+      assert {:ok, %Topic{name: "test"}} = Topic.create(kane, "test")
+    end
+
+    test "failing to create because of Google error", %{kane: kane, bypass: bypass} do
+      Bypass.expect(bypass, fn conn ->
+        assert_access_token(conn)
+
+        Plug.Conn.resp(
+          conn,
+          403,
+          ~s({"error": {"code": 403, "message": "User not authorized to perform this action.", "status": "PERMISSION_DENIED"}})
+        )
+      end)
+
+      assert {:error, _body, 403} = Topic.create(kane, "failed")
+    end
+
+    test "failing to create because of network error", %{kane: kane, bypass: bypass} do
+      Bypass.down(bypass)
+
+      assert {:error, _something} = Topic.create(kane, "network-error")
+    end
   end
 
-  test "failing to create because of Google error", %{bypass: bypass} do
-    Bypass.expect(bypass, fn conn ->
-      assert_access_token(conn)
+  describe "find/2" do
+    test "finding a topic", %{kane: kane, bypass: bypass} do
+      Bypass.expect(bypass, fn conn ->
+        [_, _, project, _, name] = String.split(conn.request_path, "/")
+        Plug.Conn.resp(conn, 200, ~s({"name": "projects/#{project}/topics/#{name}"}))
+      end)
 
-      Plug.Conn.resp(
-        conn,
-        403,
-        ~s({"error": {"code": 403, "message": "User not authorized to perform this action.", "status": "PERMISSION_DENIED"}})
-      )
-    end)
+      name = "finder"
+      assert {:ok, %Topic{name: ^name}} = Topic.find(kane, name)
+    end
 
-    assert {:error, _body, 403} = Topic.create("failed")
+    test "finding a topic with a fully-qualified name", %{kane: kane, bypass: bypass} do
+      project_id = kane.project_id
+      short_name = "fqn"
+      full_name = "projects/#{project_id}/topics/#{short_name}"
+
+      Bypass.expect(bypass, fn conn ->
+        assert conn.request_path == "/#{full_name}"
+        Plug.Conn.resp(conn, 200, ~s({"name":"#{full_name}"}))
+      end)
+
+      assert {:ok, %Topic{name: ^short_name}} = Topic.find(kane, full_name)
+    end
   end
 
-  test "failing to create because of network error", %{bypass: bypass} do
-    Bypass.down(bypass)
-    assert {:error, _something} = Topic.create("network-error")
+  describe "delete/2" do
+    test "deleting a topic", %{kane: kane, bypass: bypass} do
+      topic = %Topic{name: "delete-me"}
+
+      Bypass.expect(bypass, fn conn ->
+        assert_access_token(conn)
+        Plug.Conn.resp(conn, 200, "")
+      end)
+
+      assert {:ok, _body, _code} = Topic.delete(kane, topic)
+    end
   end
 
-  test "finding a topic", %{bypass: bypass} do
-    Bypass.expect(bypass, fn conn ->
-      [_, _, project, _, name] = String.split(conn.request_path, "/")
-      Plug.Conn.resp(conn, 200, ~s({"name": "projects/#{project}/topics/#{name}"}))
-    end)
+  describe "all/1" do
+    test "listing all topics", %{kane: kane, bypass: bypass} do
+      Bypass.expect(bypass, fn conn ->
+        project_id = kane.project_id
 
-    name = "finder"
-    assert {:ok, %Topic{name: ^name}} = Topic.find(name)
+        assert Regex.match?(~r/\/projects\/#{project_id}\/topics/, conn.request_path)
+
+        Plug.Conn.resp(conn, 200, ~s({"topics": [
+                                      {"name": "projects/#{project_id}/topics/mytopic1"},
+                                      {"name": "projects/#{project_id}/topics/mytopic2"}
+                                    ]}))
+      end)
+
+      {:ok, topics} = Topic.all(kane)
+      assert is_list(topics)
+
+      Enum.each(topics, fn t ->
+        assert %Topic{} = t
+      end)
+    end
   end
 
-  test "finding a topic with a fully-qualified name", %{bypass: bypass} do
-    {:ok, project} = Goth.Config.get(:project_id)
-    short_name = "fqn"
-    full_name = "projects/#{project}/topics/#{short_name}"
-
-    Bypass.expect(bypass, fn conn ->
-      assert conn.request_path == "/#{full_name}"
-      Plug.Conn.resp(conn, 200, ~s({"name":"#{full_name}"}))
-    end)
-
-    assert {:ok, %Topic{name: ^short_name}} = Topic.find(full_name)
-  end
-
-  test "deleting a topic", %{bypass: bypass} do
-    Bypass.expect(bypass, fn conn ->
-      assert_access_token(conn)
-      Plug.Conn.resp(conn, 200, "")
-    end)
-
-    assert {:ok, _body, _code} = %Topic{name: "delete-me"} |> Topic.delete()
-  end
-
-  test "listing all topics", %{bypass: bypass} do
-    Bypass.expect(bypass, fn conn ->
-      {:ok, project} = Goth.Config.get(:project_id)
-      assert Regex.match?(~r/\/projects\/#{project}\/topics/, conn.request_path)
-
-      Plug.Conn.resp(conn, 200, ~s({"topics": [
-                                    {"name": "projects/#{project}/topics/mytopic1"},
-                                    {"name": "projects/#{project}/topics/mytopic2"}
-                                  ]}))
-    end)
-
-    {:ok, topics} = Topic.all()
-    assert is_list(topics)
-
-    Enum.each(topics, fn t ->
-      assert %Topic{} = t
-    end)
-  end
-
-  # helpers
   defp assert_access_token(conn) do
     [token] = Plug.Conn.get_req_header(conn, "authorization")
     assert Regex.match?(~r/Bearer/, token)

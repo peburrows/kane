@@ -1,40 +1,42 @@
 defmodule Kane.Client do
-  alias Response.Success
-  alias Response.Error
+  @moduledoc false
 
-  @spec get(binary, keyword) :: Success.t() | Error.t()
-  def get(path, options \\ []), do: call(:get, path, options)
+  @type success :: {:ok, body :: String.t(), status_code :: pos_integer()}
+  @type error :: {:error, body :: String.t(), status_code :: pos_integer()}
 
-  @spec put(binary, any, keyword) :: Success.t() | Error.t()
-  def put(path, data \\ "", options \\ []), do: call(:put, path, data, options)
+  @spec get(Kane.t(), binary, keyword) :: success() | error()
+  def get(kane, path, options \\ []), do: call(kane, :get, path, options)
 
-  @spec post(binary, any, keyword) :: Success.t() | Error.t()
-  def post(path, data, options \\ []), do: call(:post, path, data, options)
+  @spec put(Kane.t(), binary, any, keyword) :: success() | error()
+  def put(kane, path, data \\ "", options \\ []), do: call(kane, :put, path, data, options)
 
-  @spec delete(binary, keyword) :: Success.t() | Error.t()
-  def delete(path, options \\ []), do: call(:delete, path, options)
+  @spec post(Kane.t(), binary, any, keyword) :: success() | error()
+  def post(kane, path, data, options \\ []), do: call(kane, :post, path, data, options)
 
-  defp call(method, path, options) do
-    headers = [auth_header()]
+  @spec delete(Kane.t(), binary, keyword) :: success() | error()
+  def delete(kane, path, options \\ []), do: call(kane, :delete, path, options)
 
-    apply(HTTPoison, method, [url(path), headers, options])
-    |> handle_response
+  defp call(kane, method, path, options) do
+    headers = [auth_header(kane)]
+    url = url(kane, path)
+
+    method
+    |> HTTPoison.request(url, "", headers, options)
+    |> handle_response()
   end
 
-  defp call(method, path, data, options) do
-    headers = [auth_header(), {"content-type", "application/json"}]
+  defp call(kane, method, path, data, options) do
+    headers = [auth_header(kane), {"content-type", "application/json"}]
+    url = url(kane, path)
 
-    apply(HTTPoison, method, [url(path), encode!(data), headers, options])
-    |> handle_response
+    method
+    |> HTTPoison.request(url, encode!(data), headers, options)
+    |> handle_response()
   end
 
-  defp url(path), do: Path.join([endpoint(), path])
+  defp url(%Kane{endpoint: endpoint}, path), do: Path.join([endpoint, path])
 
-  defp endpoint, do: Application.get_env(:kane, :endpoint, "https://pubsub.googleapis.com/v1")
-  defp token_mod, do: Application.get_env(:kane, :token, Goth.Token)
-
-  defp auth_header do
-    {:ok, token} = token_mod().for_scope(Kane.oauth_scope())
+  defp auth_header(%Kane{token: token}) do
     {"Authorization", "#{token.type} #{token.token}"}
   end
 
