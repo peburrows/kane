@@ -1,73 +1,132 @@
 defmodule Kane.Subscription do
   defstruct name: nil, topic: nil, ack_deadline: 10, filter: nil
+
   alias Kane.Topic
   alias Kane.Message
   alias Kane.Client
 
-  @type s :: %__MODULE__{name: binary}
+  @type t :: %__MODULE__{name: String.t()}
 
-  def create(%__MODULE__{} = sub) do
-    case Kane.Client.put(path(sub, :create), data(sub, :create)) do
-      {:ok, body, _code} -> {:ok, from_json(body)}
+  @spec create(Kane.t(), t()) :: {:ok, t()} | {:error, :already_exists} | Client.error()
+  def create(%Kane{project_id: project_id} = kane, %__MODULE__{} = sub) do
+    path = create_subscription_path(project_id, sub)
+    data = create_data(project_id, sub)
+
+    case Kane.Client.put(kane, path, data) do
+      {:ok, body, _code} -> {:ok, from_json(project_id, body)}
       {:error, _body, 409} -> {:error, :already_exists}
       err -> err
     end
+  end
+
+  defp create_subscription_path(project_id, subscription), do: full_name(subscription, project_id)
+
+  defp create_data(project_id, %__MODULE__{
+         ack_deadline: ack,
+         topic: %Topic{} = topic,
+         filter: nil
+       }) do
+    %{
+      "topic" => Topic.full_name(topic, project_id),
+      "ackDeadlineSeconds" => ack
+    }
+  end
+
+  defp create_data(project_id, %__MODULE__{
+         ack_deadline: ack,
+         topic: %Topic{} = topic,
+         filter: filter
+       }) do
+    %{
+      "topic" => Topic.full_name(topic, project_id),
+      "ackDeadlineSeconds" => ack,
+      "filter" => filter
+    }
   end
 
   @doc """
   Find a subscription by name. The name can be either a short name (`my-subscription`)
   or the fully-qualified name (`projects/my-project/subscriptions/my-subscription`)
   """
-  @spec find(String.s()) :: {:ok, s} | Error.s()
-  def find(name) do
-    case Client.get(find_path(name)) do
+  @spec find(Kane.t(), String.t()) :: {:ok, t()} | Client.error()
+  def find(%Kane{project_id: project_id} = kane, name) when is_binary(name) do
+    path = find_subscription_path(project_id, name)
+
+    case Client.get(kane, path) do
       {:ok, body, _code} ->
-        {:ok, from_json(body)}
+        {:ok, from_json(project_id, body)}
 
       err ->
         err
     end
   end
 
-  def delete(%__MODULE__{name: name}), do: delete(name)
-  def delete(name), do: Kane.Client.delete(path(name, :delete))
-
-  def pull(sub, options \\ [])
-
-  def pull(%__MODULE__{} = sub, max_messages) when is_integer(max_messages) do
-    pull(sub, max_messages: max_messages)
+  defp find_subscription_path(project_id, sub_name) do
+    sub_name = strip!(project_id, sub_name)
+    full_name(sub_name, project_id)
   end
 
-  def pull(%__MODULE__{} = sub, options) do
-    case Kane.Client.post(
-           path(sub, :pull),
-           data(sub, :pull, options),
-           http_options(options)
-         ) do
+  @spec delete(kane :: Kane.t(), subscription :: t() | String.t()) ::
+          Client.success() | Client.error()
+  def delete(kane, %__MODULE__{name: sub_name}), do: delete(kane, sub_name)
+
+  def delete(%Kane{project_id: project_id} = kane, sub_name) do
+    path = delete_subscription_path(project_id, sub_name)
+
+    Client.delete(kane, path)
+  end
+
+  defp delete_subscription_path(project_id, subscription), do: full_name(subscription, project_id)
+
+  @spec pull(Kane.t(), t(), Keyword.t() | pos_integer()) :: {:ok, [Message.t()]} | Client.error()
+  def pull(kane, sub, options \\ [])
+
+  def pull(kane, %__MODULE__{} = sub, max_messages) when is_integer(max_messages) do
+    pull(kane, sub, max_messages: max_messages)
+  end
+
+  def pull(%Kane{project_id: project_id} = kane, %__MODULE__{} = sub, options) do
+    path = pull_subscriptions_messages_path(project_id, sub)
+    data = pull_data(sub, options)
+    http_options = http_options(options)
+
+    case Kane.Client.post(kane, path, data, http_options) do
       {:ok, body, _code} when body in ["{}", "{}\n"] ->
         {:ok, []}
 
       {:ok, body, _code} ->
-        {:ok,
-         body
-         |> Jason.decode!()
-         |> Map.get("receivedMessages", [])
-         |> Enum.map(fn m ->
-           Message.from_subscription!(m)
-         end)}
+        messages =
+          body
+          |> Jason.decode!()
+          |> Map.get("receivedMessages", [])
+          |> Enum.map(&Message.from_subscription!/1)
+
+        {:ok, messages}
 
       err ->
         err
     end
   end
 
-  def stream(%__MODULE__{} = sub, options \\ []) do
+  defp pull_subscriptions_messages_path(project_id, subscription) do
+    "#{full_name(subscription, project_id)}:pull"
+  end
+
+  defp pull_data(%__MODULE__{}, options) do
+    %{
+      returnImmediately: Keyword.get(options, :return_immediately, true),
+      maxMessages: Keyword.get(options, :max_messages, 100)
+    }
+  end
+
+  @spec stream(Kane.t(), t(), Keyword.t() | pos_integer()) :: Enumerable.t()
+  def stream(%Kane{} = kane, %__MODULE__{} = sub, options \\ []) do
     options = Keyword.put(options, :return_immediately, false)
 
     Stream.resource(
       fn -> :ok end,
       fn acc ->
-        case pull(sub, options) do
+        case pull(kane, sub, options) do
           {:ok, messages} ->
             {messages, acc}
 
@@ -82,87 +141,67 @@ defmodule Kane.Subscription do
     )
   end
 
-  def ack(%__MODULE__{}, []), do: :ok
+  @spec ack(Kane.t(), t(), messages :: Message.t() | [Message.t()]) :: :ok | Client.error()
+  def ack(%Kane{}, %__MODULE__{}, []), do: :ok
 
-  def ack(%__MODULE__{} = sub, messages) when is_list(messages) do
+  def ack(kane, sub, %Message{} = message), do: ack(kane, sub, [message])
+
+  def ack(%Kane{project_id: project_id} = kane, %__MODULE__{} = sub, messages)
+      when is_list(messages) do
+    path = ack_subscriptions_message_path(project_id, sub)
+
     data = %{"ackIds" => Enum.map(messages, fn m -> m.ack_id end)}
 
-    case Kane.Client.post(path(sub, :ack), data) do
+    case Kane.Client.post(kane, path, data) do
       {:ok, _body, _code} -> :ok
       err -> err
     end
   end
 
-  def ack(%__MODULE__{} = sub, %Message{} = mess), do: ack(sub, [mess])
+  defp ack_subscriptions_message_path(project_id, subscription) do
+    "#{full_name(subscription, project_id)}:acknowledge"
+  end
 
-  def extend(%__MODULE__{}, [], _), do: :ok
+  @spec extend(Kane.t(), t(), messages :: Message.t() | [Message.t()], extension :: pos_integer()) ::
+          :ok | Client.error()
+  def extend(%Kane{}, %__MODULE__{}, [], _), do: :ok
 
-  def extend(%__MODULE__{} = sub, %Message{} = msg, extension), do: extend(sub, [msg], extension)
+  def extend(kane, sub, %Message{} = msg, extension), do: extend(kane, sub, [msg], extension)
 
-  def extend(%__MODULE__{} = sub, messages, extension)
+  def extend(%Kane{project_id: project_id} = kane, %__MODULE__{} = sub, messages, extension)
       when is_list(messages) and is_integer(extension) do
+    path = extend_subscriptions_message_path(project_id, sub)
+
     data = %{
       "ackIds" => Enum.map(messages, & &1.ack_id),
       "ackDeadlineSeconds" => extension
     }
 
-    case Kane.Client.post(path(sub, :extend), data) do
+    case Kane.Client.post(kane, path, data) do
       {:ok, _body, _code} -> :ok
       err -> err
     end
   end
 
-  def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic, filter: nil}, :create) do
-    %{
-      "topic" => Topic.full_name(topic),
-      "ackDeadlineSeconds" => ack
-    }
+  defp extend_subscriptions_message_path(project_id, subscription) do
+    "#{full_name(subscription, project_id)}:modifyAckDeadline"
   end
 
-  def data(%__MODULE__{ack_deadline: ack, topic: %Topic{} = topic, filter: filter}, :create) do
-    %{
-      "topic" => Topic.full_name(topic),
-      "ackDeadlineSeconds" => ack,
-      "filter" => filter
-    }
+  @spec full_name(subscription :: t() | String.t(), String.t()) :: String.t()
+  def full_name(%__MODULE__{name: sub_name}, project_id), do: full_name(sub_name, project_id)
+
+  def full_name(sub_name, project_id) do
+    "#{subscriptions_path(project_id)}/#{sub_name}"
   end
 
-  def data(%__MODULE__{}, :pull, options) do
-    %{
-      returnImmediately: Keyword.get(options, :return_immediately, true),
-      maxMessages: Keyword.get(options, :max_messages, 100)
-    }
+  defp subscriptions_path(project_id), do: "projects/#{project_id}/subscriptions"
+
+  @spec strip!(project_id :: String.t(), name :: String.t()) :: String.t()
+  def strip!(project_id, name) do
+    String.replace(name, ~r(^#{subscriptions_path(project_id)}/?), "")
   end
 
-  defp project do
-    {:ok, project} = Goth.Config.get(:project_id)
-    project
-  end
-
-  defp find_path, do: "projects/#{project()}/subscriptions"
-  defp find_path(subscription), do: "#{find_path()}/#{strip!(subscription)}"
-
-  def path(%__MODULE__{name: name}, kind), do: path(name, kind)
-
-  def path(name, kind) do
-    case kind do
-      :pull -> full_name(name) <> ":pull"
-      :ack -> full_name(name) <> ":acknowledge"
-      :extend -> full_name(name) <> ":modifyAckDeadline"
-      _ -> full_name(name)
-    end
-  end
-
-  def full_name(%__MODULE__{name: name}), do: full_name(name)
-
-  def full_name(name) do
-    {:ok, project} = Goth.Config.get(:project_id)
-    "projects/#{project}/subscriptions/#{name}"
-  end
-
-  def strip!(name), do: String.replace(name, ~r(^#{find_path()}/?), "")
-
-  defp from_json(json) do
+  defp from_json(project_id, json) do
     data = Jason.decode!(json)
 
     subscription_name = Map.get(data, "name")
@@ -177,9 +216,9 @@ defmodule Kane.Subscription do
     # name, we strip away the prefix for the topic and subscription names at the time we
     # deserialize the response.
     %__MODULE__{
-      name: strip!(subscription_name),
+      name: strip!(project_id, subscription_name),
       ack_deadline: Map.get(data, "ackDeadlineSeconds"),
-      topic: %Topic{name: Topic.strip!(topic_name)},
+      topic: %Topic{name: Topic.strip!(project_id, topic_name)},
       filter: Map.get(data, "filter")
     }
   end
