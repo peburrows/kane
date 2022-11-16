@@ -15,8 +15,8 @@ defmodule Kane do
   @spec oauth_scope :: String.t()
   def oauth_scope, do: "https://www.googleapis.com/auth/pubsub"
 
-  @enforce_keys [:endpoint, :token, :project_id]
-  defstruct [:endpoint, :token, :project_id]
+  @enforce_keys [:token, :project_id]
+  defstruct [:token, :project_id, endpoint: "https://pubsub.googleapis.com/v1"]
 
   @type t :: %__MODULE__{
     endpoint: String.t(),
