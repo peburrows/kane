@@ -12,3 +12,11 @@ defmodule Kane.TestToken do
      }}
   end
 end
+
+defmodule Kane.GCPTestCredentials do
+  def read! do
+    "config/test-credentials.json"
+    |> File.read!()
+    |> Jason.decode!()
+  end
+end

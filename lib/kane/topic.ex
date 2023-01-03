@@ -15,20 +15,25 @@ defmodule Kane.Topic do
       Kane.Subscription.ack(subscription, messages)
   """
   alias Kane.Client
-  alias Kane.Client.Response.Error
 
-  @type t :: %__MODULE__{name: binary}
+  @type t :: %__MODULE__{name: String.t()}
+  @enforce_keys [:name]
   defstruct [:name]
 
   @doc """
   Find a topic by name. The name can be either a short name (`my-topic`)
   or the fully-qualified name (`projects/my-project/topics/my-topic`)
   """
-  @spec find(String.t()) :: {:ok, t} | Error.t()
-  def find(name) do
-    case Client.get(path(name)) do
+  @spec find(Kane.t(), project_id :: String.t()) :: {:ok, t} | Client.error()
+  def find(%Kane{project_id: project_id} = kane, topic_name) when is_binary(topic_name) do
+    path = topic_path(project_id, topic_name)
+
+    case Client.get(kane, path) do
       {:ok, body, _code} ->
-        {:ok, body |> Jason.decode!() |> Map.get("name") |> with_name}
+        topic_name = body |> Jason.decode!() |> Map.get("name")
+        topic = %__MODULE__{name: strip!(project_id, topic_name)}
+
+        {:ok, topic}
 
       err ->
         err
@@ -39,16 +44,22 @@ defmodule Kane.Topic do
   Retrieve all the topics from the API. **NOTE:** `Subscription.all/0` doesn't currently support pagination,
   so if you have more than 100 topics, you won't be able to retrieve all of them.
   """
-  @spec all :: {:ok, [t]} | Error.t()
-  def all do
-    case Client.get(path()) do
-      {:ok, body, _code} ->
-        {:ok, %{"topics" => topics}} = Jason.decode(body)
+  @spec all(Kane.t()) :: {:ok, [t()]} | Client.error()
+  def all(%Kane{project_id: project_id} = kane) do
+    path = topics_project_path(project_id)
 
-        {:ok,
-         Enum.map(topics, fn t ->
-           with_name(t["name"])
-         end)}
+    case Client.get(kane, path) do
+      {:ok, body, _code} ->
+        decoded_topics =
+          body
+          |> Jason.decode!()
+          |> Map.fetch!("topics")
+          |> Enum.map(fn json_topic ->
+            topic_name = Map.fetch!(json_topic, "name")
+            %__MODULE__{name: strip!(project_id, topic_name)}
+          end)
+
+        {:ok, decoded_topics}
 
       err ->
         err
@@ -56,49 +67,58 @@ defmodule Kane.Topic do
   end
 
   @doc """
-  Create a new topic in the API
+  Create a new topic in the API.
   """
-  @spec create(t | String.t()) :: {:ok, t} | {:error, :already_exists} | Error.t()
-  def create(%__MODULE__{name: topic}), do: create(topic)
+  @spec create(Kane.t(), topic :: t() | String.t()) ::
+          {:ok, t} | {:error, :already_exists} | Client.error()
+  def create(kane, %__MODULE__{name: topic_name}), do: create(kane, topic_name)
 
-  def create(topic) do
-    case Client.put(path(topic)) do
-      {:ok, _body, _code} -> {:ok, %__MODULE__{name: topic}}
+  def create(%Kane{project_id: project_id} = kane, topic_name) when is_binary(topic_name) do
+    path = topic_path(project_id, topic_name)
+
+    case Client.put(kane, path) do
+      {:ok, _body, _code} -> {:ok, %__MODULE__{name: topic_name}}
       {:error, _body, 409} -> {:error, :already_exists}
       err -> err
     end
   end
 
-  @spec delete(t | String.t()) :: {:ok, String.t(), non_neg_integer} | Error.t()
-  def delete(%__MODULE__{name: topic}), do: delete(topic)
-  def delete(topic), do: Client.delete(path(topic))
+  @spec delete(Kane.t(), topic :: t() | String.t()) :: Client.success() | Client.error()
+  def delete(kane, %__MODULE__{name: topic_name}), do: delete(kane, topic_name)
+
+  def delete(%Kane{project_id: project_id} = kane, topic_name)
+      when is_binary(topic_name) do
+    path = topic_path(project_id, topic_name)
+
+    Client.delete(kane, path)
+  end
 
   @doc """
   Strips the project and topic prefix from a fully qualified topic name
 
-      iex> Kane.Topic.strip!("projects/my-project/topics/my-topic")
+      iex> Kane.Topic.strip!("my-project", "projects/my-project/topics/my-topic")
       "my-topic"
   """
-  @spec strip!(String.t()) :: String.t()
-  def strip!(name), do: String.replace(name, ~r(^#{path()}/?), "")
+  @spec strip!(project_id :: String.t(), topic_name :: String.t()) :: String.t()
+  def strip!(project_id, topic_name) do
+    path = topics_project_path(project_id)
+    String.replace(topic_name, ~r(^#{path}/?), "")
+  end
 
   @doc """
   Adds the project and topic prefix (if necessary) to create a fully-qualified topic name
 
-      iex> Kane.Topic.full_name(%Kane.Topic{name: "my-topic"})
+      iex> Kane.Topic.full_name(%Kane.Topic{name: "my-topic"}, "my-project")
       "projects/my-project/topics/my-topic"
   """
-  @spec full_name(t) :: String.t()
-  def full_name(%__MODULE__{name: name}), do: path(name)
-  def full_name(name), do: full_name(%__MODULE__{name: name})
+  @spec full_name(t(), project_id :: String.t()) :: String.t()
+  def full_name(%__MODULE__{name: name}, project_id), do: full_name(name, project_id)
 
-  defp with_name(name), do: %__MODULE__{name: strip!(name)}
+  def full_name(topic_name, project_id) when is_binary(project_id) and is_binary(topic_name),
+    do: topic_path(project_id, topic_name)
 
-  defp project do
-    {:ok, id} = Goth.Config.get(:project_id)
-    id
-  end
+  defp topics_project_path(project_id), do: "projects/#{project_id}/topics"
 
-  defp path, do: "projects/#{project()}/topics"
-  defp path(topic), do: "#{path()}/#{strip!(topic)}"
+  defp topic_path(project_id, topic),
+    do: "#{topics_project_path(project_id)}/#{strip!(project_id, topic)}"
 end
