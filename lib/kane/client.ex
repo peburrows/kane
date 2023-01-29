@@ -54,5 +54,5 @@ defmodule Kane.Client do
   end
 
   defp encode!(""), do: ""
-  defp encode!(data), do: Jason.encode!(data)
+  defp encode!(data), do: Jason.encode_to_iodata!(data)
 end
