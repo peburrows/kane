@@ -12,7 +12,7 @@ Kane is for publishing and subscribing to topics using Google Cloud Pub/Sub.
 
 ```elixir
 def deps do
-  [{:kane, "~> 0.9.0"}]
+  [{:kane, "~> 1.0"}]
 end
 ```
 
